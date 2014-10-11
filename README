@@ -1,0 +1,34 @@
+MSc Thesis Project 
+
+This repository contains source code of my MSc thesis project: implementation
+of various (3 up to now) Multiparty Key Agreement protocols, i.e. generalization 
+of the famous Diffie-Hellman key exchange. The target platform is an embedded bare metal 
+environment, specifically I've developed all the code on a stm32f407 discovery board, 
+mouting an arm cortex-m4 processor. The protocol used to communicate between the 
+board is KNX, up to now the physical transmission works through the uart peripheral
+provided by the board.
+
+All the code to set up and manage the board hardware and peripherals (all the code
+related specifically to the board is in the stm32f4d_helper module) have been taken
+or adapeted from this nice repository of dwelch67:
+
+https://github.com/dwelch67/stm32f4d
+
+Up to now I'm not using the standard st library, therefore the code dealing with the board 
+is really low level, but nonetheless very instructive since I have to manage a bunch of stuff
+(leds, uart1 and uart6, interrupts etc).
+
+All the crytpo primitives needed to implement the aforementioned protocols are provided by 
+the PolarSSL library:
+
+https://polarssl.org/api/
+
+The great thing about this library is that it is designed to run on embedded devices and
+so it is written in a very elegant, easy to understand and modular fashion. 
+Algorithms implemented so far:
+
+- BD1 (M. Burmester, Y. Desmedt, A Secure and Efficient Conference Key Distribution System)
+- BD2 (M. Burmester, Y. Desmedt, Efficient and Secure Conference Key Distribution)
+- MKA-abp (A. Antonini, A. Barenghi, G. Pelosi, Security Analysis of Building Automation Networks
+Threat Model and Viable Mitigation Techniques)
+Indeed in the project there are only the modules needed by my algorithms nothing more.
