@@ -5,13 +5,17 @@ implementation of various (3 up to now) Multiparty Key Agreement protocols,
 i.e. generalization  of the famous Diffie-Hellman key exchange. 
 The target platform is an embedded bare metal environment, 
 specifically I've developed all the code on a stm32f407 discovery board, 
-mouting an arm cortex-m4 processor. The protocol used to communicate between the 
-board is KNX, up to now the physical transmission works through the uart 
+mounting an arm cortex-m4 processor. The protocol used to communicate between the 
+board is KNX:
+
+http://en.wikipedia.org/wiki/KNX_%28standard%29
+
+Up to now the physical transmission works through the uart 
 peripheral provided by the board.
 
 All the code to set up and manage the board hardware and peripherals 
 (all the code related to the board is in the stm32f4d_helper module) 
-have been taken or adapeted from this nice repository of dwelch67:
+has been taken or adapeted from this nice repository of dwelch67:
 
 https://github.com/dwelch67/stm32f4d
 
@@ -33,4 +37,3 @@ Algorithms implemented so far:
 - BD2 (M. Burmester, Y. Desmedt, Efficient and Secure Conference Key Distribution)
 - MKA-abp (A. Antonini, A. Barenghi, G. Pelosi, Security Analysis of Building Automation Networks
 Threat Model and Viable Mitigation Techniques)
-Indeed in the project there are only the modules needed by my algorithms nothing more.
