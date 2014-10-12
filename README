@@ -15,7 +15,7 @@ peripheral provided by the board.
 
 All the code to set up and manage the board hardware and peripherals 
 (all the code related to the board is in the stm32f4d_helper module) 
-has been taken or adapeted from this nice repository of dwelch67:
+has been taken or adapted from this nice repository of dwelch67:
 
 https://github.com/dwelch67/stm32f4d
 

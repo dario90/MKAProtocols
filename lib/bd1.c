@@ -1,6 +1,9 @@
 # include "bd1.h"
 
 int bd1_init(bd1_context *ctx,ecp_group_id id) {
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
+
 	mpi_init(&ctx->r);
 	ecp_point_init(&ctx->z);
 	ecp_point_init(&ctx->X);
@@ -11,6 +14,9 @@ int bd1_init(bd1_context *ctx,ecp_group_id id) {
 int bd1_gen_point(bd1_context *ctx,unsigned int *olen,unsigned char *buf,unsigned int buflen,void *p_rng) {
 	int ret;
 	ecp_point z;
+
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
 
 	ecp_point_init(&z);
 	MPI_CHK(ecp_gen_keypair(&ctx->grp,&ctx->r,&z,ctr_drbg_random,p_rng));
@@ -25,6 +31,9 @@ int bd1_gen_value(bd1_context *ctx,unsigned char *buf,unsigned int buflen,unsign
 	int ret;
 	const unsigned char *p = buf;
 	ecp_point z1,z2;
+
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
 
 	ecp_point_init(&z1);
 	ecp_point_init(&z2);
@@ -48,6 +57,9 @@ int bd1_compute_key(bd1_context *ctx,unsigned char *buf,unsigned int buflen,int 
 	const unsigned char *p = buf;
 	ecp_point key,helper1,helper2;
 	mpi exp1,exp2,k;
+
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
 
 	ecp_point_init(&key);
 	ecp_point_init(&helper1);
@@ -96,4 +108,16 @@ cleanup:
 	mpi_free(&exp2);
 	mpi_free(&k);
 	return ret;			
+}
+
+int bd1_free(bd1_context *ctx) {
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
+
+	ecp_group_free(&ctx->grp);
+	mpi_free(&ctx->r);
+	ecp_point_free(&ctx->z);
+	ecp_point_free(&ctx->X);
+
+	return 0;	
 }

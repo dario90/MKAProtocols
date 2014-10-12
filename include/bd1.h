@@ -71,3 +71,13 @@ int bd1_gen_value(bd1_context *ctx,unsigned char *buf,unsigned int buflen,unsign
 * \return 0 if successful
 */
 int bd1_compute_key(bd1_context *ctx,unsigned char *buf,unsigned int buflen,int n,unsigned int *olen,unsigned char *obuf,unsigned int obuflen,void *p_rng);
+
+
+/**
+* \brief MKA context free function
+*
+* \param ctx    MKA context     
+*
+* \return 0 if successful
+*/
+int bd1_free(bd1_context *ctx);

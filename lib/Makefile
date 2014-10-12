@@ -9,8 +9,8 @@ OBJS =	entropy.o	entropy_poll.o	ctr_drbg.o	sha512.o	aes.o	bignum.o	ecp.o	ecdh.o	
 stm32: entropy.gcc.thumb.o	entropy_poll.gcc.thumb.o	ctr_drbg.gcc.thumb.o \
 sha512.gcc.thumb.o	aes.gcc.thumb.o	bignum.gcc.thumb.o	ecp.gcc.thumb.o	ecdh.gcc.thumb.o \
 ecp_curves.gcc.thumb.o	platform.gcc.thumb.o	memory_buffer_alloc.gcc.thumb.o \
-stm32f4d_helper.gcc.thumb.o	util.gcc.thumb.o	bd1.gcc.thumb.o	bd2.gcc.thumb.o	\
-mka.gcc.thumb.o	KnxTelegram.gcc.thumb.o	KnxTpUart.gcc.thumb.o
+stm32f4d_helper.gcc.thumb.o	util.gcc.thumb.o bd1.gcc.thumb.o \
+bd2.gcc.thumb.o	mka.gcc.thumb.o	KnxTelegram.gcc.thumb.o	KnxTpUart.gcc.thumb.o
 
 entropy_poll.gcc.thumb.o: entropy_poll.c
 	$(ARMGNU)-gcc $(COPS) -mthumb -c entropy_poll.c -o entropy_poll.gcc.thumb.o
