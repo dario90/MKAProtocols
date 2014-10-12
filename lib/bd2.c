@@ -132,6 +132,17 @@ cleanup:
 	return ret;
 }
 
+int bd2_free(bd2_context *ctx) {
+	if (ctx == NULL)
+		return BAD_INPUT_DATA;
+	
+	ecdh_free(&ctx->context);
+	ecp_point_free(&ctx->X);
+	ecp_point_free(&ctx->key);
+
+	return 0;
+}
+
 int bd2_make_public(bd2_context *ctx,unsigned int *olen,unsigned char *buf,unsigned int buflen,void *p_rng) {
 	int ret;
 

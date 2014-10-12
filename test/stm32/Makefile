@@ -13,7 +13,8 @@ OBJS = ../../lib/entropy.gcc.thumb.o	../../lib/entropy_poll.gcc.thumb.o	\
 
 LIBGCC = /home/dario/gcc-arm-none-eabi-4_8-2014q2/lib/gcc/arm-none-eabi/4.8.4/armv7-m/libgcc.a
 
-all: mka_test.gcc.thumb.bin	bd1_test.gcc.thumb.bin
+all: mka_test.gcc.thumb.bin	bd1_test.gcc.thumb.bin	bd2_test_root.gcc.thumb.bin \
+bd2_test_node.gcc.thumb.bin
 
 vectors.o : vectors.s
 	$(ARMGNU)-as vectors.s -o vectors.o
@@ -29,6 +30,18 @@ bd1_test.gcc.thumb.o: bd1_test.c $(OBJS)
 bd1_test.gcc.thumb.bin : memmap vectors.o bd1_test.gcc.thumb.o $(OBJS)
 	$(ARMGNU)-ld -o bd1_test.gcc.thumb.elf -T memmap vectors.o bd1_test.gcc.thumb.o  $(OBJS) $(LIBGCC)
 	$(ARMGNU)-objcopy bd1_test.gcc.thumb.elf bd1_test.gcc.thumb.bin -O binary
+
+bd2_test_root.gcc.thumb.o: bd2_test_root.c $(OBJS)
+	$(ARMGNU)-gcc $(COPS) -mthumb -c bd2_test_root.c -o bd2_test_root.gcc.thumb.o
+bd2_test_root.gcc.thumb.bin : memmap vectors.o bd2_test_root.gcc.thumb.o $(OBJS)
+	$(ARMGNU)-ld -o bd2_test_root.gcc.thumb.elf -T memmap vectors.o bd2_test_root.gcc.thumb.o  $(OBJS) $(LIBGCC)
+	$(ARMGNU)-objcopy bd2_test_root.gcc.thumb.elf bd2_test_root.gcc.thumb.bin -O binary
+
+bd2_test_node.gcc.thumb.o: bd2_test_node.c $(OBJS)
+	$(ARMGNU)-gcc $(COPS) -mthumb -c bd2_test_node.c -o bd2_test_node.gcc.thumb.o
+bd2_test_root.gcc.thumb.bin : memmap vectors.o bd2_test_node.gcc.thumb.o $(OBJS)
+	$(ARMGNU)-ld -o bd2_test_node.gcc.thumb.elf -T memmap vectors.o bd2_test_node.gcc.thumb.o  $(OBJS) $(LIBGCC)
+	$(ARMGNU)-objcopy bd2_test_node.gcc.thumb.elf bd2_test_node.gcc.thumb.bin -O binary
 
 clean:
 	rm *.o
