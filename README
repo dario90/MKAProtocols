@@ -34,7 +34,7 @@ are provided by the PolarSSL library:
 https://polarssl.org/api/
 
 The great thing about this library is that it is designed to run on embedded 
-devices and so it is written in a very elegant, easy to understand 
+devices and moreover it's written in a very elegant, easy to understand 
 and modular fashion; indeed I've incorporated in my project only the modules
 that are strictly needed in order to limit code size.
 

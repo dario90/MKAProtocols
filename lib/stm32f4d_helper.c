@@ -1,19 +1,50 @@
 # include "stm32f4d_helper.h"
 # include "polarssl/entropy.h"
 
+# define SPEED    CLOCK168
+
 void PUT32 ( unsigned int, unsigned int );
 void PUT16 ( unsigned int, unsigned int );
 void PUT8 ( unsigned int, unsigned int );
 unsigned int GET32 ( unsigned int );
 unsigned int GET16 ( unsigned int );
 
+extern unsigned long _data_flash;
+extern unsigned long _data_begin;
+extern unsigned long _data_end;
+extern unsigned long _bss_begin;
+extern unsigned long _bss_end;
+extern unsigned long _stack_end;
+
 volatile int counter = 0;
 volatile int writer = 0; 
 volatile int reader = 0;
 volatile int uart_buf[UART_BUF_MAX_DIM];
 
-void clock_init ( void )
+void handler_reset(void)
 {
+    unsigned long *source;
+    unsigned long *destination;
+    // Copying data from Flash to RAM
+    source = &_data_flash;
+    for (destination = &_data_begin; destination < &_data_end;)
+    {
+        *(destination++) = *(source++);
+    }   
+    // default zero to undefined variables
+    for (destination = &_bss_begin; destination < &_bss_end;)
+    {
+        *(destination++) = 0;
+    }
+
+	// init clock, leds, rng, uart
+	clock_init();
+	init();
+	rnd_init();
+	uart_init(); 
+}
+
+void clock_init() {
     unsigned int ra;
 
     //enable HSE
@@ -26,29 +57,58 @@ void clock_init ( void )
     {
         if(GET32(RCC_CR)&(1<<17)) break;
     }
-    PUT32(RCC_CFGR,0x0000D801); //PPRE2 /2 PPRE1 /8 sw=hse
+	switch(SPEED) {
+		case CLOCK64:
+			PUT32(RCC_CFGR,0x00001001);
+			break;
+		case CLOCK120:
+			PUT32(RCC_CFGR,0x00009401);
+			break;
+		case CLOCK168:
+			PUT32(RCC_CFGR,0x0000D801);
+			break;
+    	default: 
+			PUT32(RCC_CFGR,0x00000001); // system clock = hse
+			break;
+	}
+	
     //slow flash accesses down otherwise it will crash
     PUT32(FLASH_ACR,0x00000105);
-    //8MHz HSE, 168MHz pllgen 48MHz pll usb
-    //Q 7 P 2 N 210 M 5 vcoin 1 pllvco 336 pllgen 168 pllusb 48
-    ra=(7<<24)|(1<<22)|(((2>>1)-1)<<16)|(210<<6)|(5<<0);
-    PUT32(RCC_PLLCFGR,ra);
-    // enable pll
-    ra=GET32(RCC_CR);
-    ra|=(1<<24);
+
+	// setup pll: PLLvco = CLKIN*(PLLN/PLLM), PLLout = PLLvco/PLLP, PLLrng = PLLvco/PLLQ
+    PUT32(RCC_PLLCFGR,SPEED);
+
+	// enable pll
+	ra=GET32(RCC_CR);
+  	ra|=(1<<24);
     PUT32(RCC_CR,ra);
-    //wait for pll lock
+	//wait for pll lock
     while(1)
     {
         if(GET32(RCC_CR)&(1<<25)) break;
     }
-    //select pll
-    PUT32(RCC_CFGR,0x0000D802); //PPRE2 /2 PPRE1 /8 sw=pllclk
+	
+	switch(SPEED) {
+		case CLOCK64:
+			PUT32(RCC_CFGR,0x00001002);
+			break;
+		case CLOCK120:
+			PUT32(RCC_CFGR,0x00009402);
+			break;
+		case CLOCK168:
+			PUT32(RCC_CFGR,0x0000D802);
+			break;
+    	default: 
+			PUT32(RCC_CFGR,0x00000002); // system clock = pll
+			break;
+	}
+
     //if you didnt set the flash wait states you may crash here
-    //wait for it to use the pll
+
+	//wait for it to use the pll
     while(1)
     {
-        if((GET32(RCC_CFGR)&0xC)==0x8) break;
+        if((GET32(RCC_CFGR)&0xC) == 0x8) break;
     }
  }
 
@@ -70,28 +130,19 @@ void rnd_init ( void )
 void init() {
 	unsigned int ra;
 
-	ra=GET32(RCCBASE+0x30);
+	ra=GET32(RCC_AHB1ENR);
     ra|=1<<3; //enable port D
-    PUT32(RCCBASE+0x30,ra);
-
-	/*
-    ra=GET32(RCCBASE+0x40);
-    ra|=1<<3; //enable TIM5
-    PUT32(RCCBASE+0x40,ra);
-
-    PUT16(TIM5BASE+0x00,0x0000);
-    PUT16(TIM5BASE+0x00,0x0001);
-	*/
+    PUT32(RCC_AHB1ENR,ra);
 
     //d12 = d15 output
-    ra=GET32(GPIODBASE+0x00);
+    ra=GET32(GPIOD_MODER);
     ra&=0x00FFFFFF;
     ra|=0x55000000;
-    PUT32(GPIODBASE+0x00,ra);
+    PUT32(GPIOD_MODER,ra);
     //push pull
-    ra=GET32(GPIODBASE+0x04);
+    ra=GET32(GPIOD_OTYPER);
     ra&=0xFFFF0FFF;
-    PUT32(GPIODBASE+0x04,ra);
+    PUT32(GPIOD_OTYPER,ra);
 }
 
 void uart1_init() {
@@ -106,25 +157,48 @@ void uart1_init() {
     PUT32(RCC_APB2ENR,ra);
 
     //PB6 USART1_TX
-    //PB7 USART1_RX --disabled--
+    //PB7 USART1_RX
 	
 	ra=GET32(GPIOB_MODER);
     ra|= (2<<12);
-    //ra|= (2<<14);
+    ra|= (2<<14);
     PUT32(GPIOB_MODER,ra);
     ra=GET32(GPIOB_OTYPER);
     ra&=(1<<6);
-    //ra&=(1<<7);
+    ra&=(1<<7);
     PUT32(GPIOB_OTYPER,ra);
     ra=GET32(GPIOB_AFRL);
     ra|=(7<<24);
-    //ra|=(7<<28);
+    ra|=(7<<28);
     PUT32(GPIOB_AFRL,ra);
 
-    // divisor 136 fractional divisor 11
-    PUT32(USART1_BRR,(136<<4)|(11<<0));
-    //PUT32(USART1_CR1,(1<<13)|(1<<3)|(1<<2));
-	PUT32(USART1_CR1,(1<<13)|(1<<3));
+// Baud rate from clock frequency: BR = Fck/(16*USARTDIV)
+// USARTDIV = Fck/(BR*16)
+    switch(SPEED) {
+		case CLOCK8:
+			PUT32(USART1_BRR,(52<<4)|(1<<0));
+			break;
+		case CLOCK16:
+			PUT32(USART1_BRR,(104<<4)|(12<<0));
+			break;
+		case CLOCK32:
+			PUT32(USART1_BRR,(208<<4)|(6<<0));
+			break;
+		case CLOCK42:
+			PUT32(USART1_BRR,(273<<4)|(7<<0));
+			break;
+		case CLOCK64:
+			PUT32(USART1_BRR,(416<<4)|(12<<0));
+			break;
+		case CLOCK120:
+			PUT32(USART1_BRR,(390<<4)|(10<<0));
+			break;
+		case CLOCK168:
+			PUT32(USART1_BRR,(136<<4)|(11<<0));
+			break;
+	}
+	PUT32(USART1_CR1,(1<<13)|(1<<3)|(1<<2)|(1<<5));
+	PUT32(0xE000E104,0x00000020); // enable USART1 interrupt
 }
 
 void uart6_init() {
@@ -138,21 +212,48 @@ void uart6_init() {
     ra|=1<<5; //enable USART6
     PUT32(RCC_APB2ENR,ra);
 
+	//PC6 USART6_TX
     //PC7 USART6_RX 
 	
-	ra=GET32(GPIOC_MODER);
-    ra|= (2<<14);
+	ra = GET32(GPIOC_MODER);
+	ra |= (2<<12);
+    ra |= (2<<14); 
     PUT32(GPIOC_MODER,ra);
-    ra=GET32(GPIOC_OTYPER);
-    ra&=(1<<7);
+    ra = GET32(GPIOC_OTYPER);
+	ra &= (1<<6);
+    ra &= (1<<7);
     PUT32(GPIOC_OTYPER,ra);
-    ra=GET32(GPIOC_AFRL);
-    ra|=(8<<28);
+    ra = GET32(GPIOC_AFRL);
+	ra |=(8<<24);
+    ra |=(8<<28);
     PUT32(GPIOC_AFRL,ra);
 
-    // divisor 136 fractional divisor 11
-    PUT32(USART6_BRR,(136<<4)|(11<<0));
-	PUT32(USART6_CR1,(1<<13)|(1<<2)|(1<<5));
+    // Baud rate from clock frequency: BR = Fck/(16*USARTDIV)
+// USARTDIV = Fck/(BR*16)
+    switch(SPEED) {
+		case CLOCK8:
+			PUT32(USART6_BRR,(52<<4)|(1<<0));
+			break;
+		case CLOCK16:
+			PUT32(USART6_BRR,(104<<4)|(12<<0));
+			break;
+		case CLOCK32:
+			PUT32(USART6_BRR,(208<<4)|(6<<0));
+			break;
+		case CLOCK42:
+			PUT32(USART6_BRR,(273<<4)|(7<<0));
+			break;
+		case CLOCK64:
+			PUT32(USART6_BRR,(416<<4)|(12<<0));
+			break;
+		case CLOCK120:
+			PUT32(USART6_BRR,(390<<4)|(10<<0));
+			break;
+		case CLOCK168:
+			PUT32(USART6_BRR,(136<<4)|(11<<0));
+			break;
+	}
+	PUT32(USART6_CR1,(1<<13)|(1<<2)|(1<<5)|(1<<3));
 	PUT32(0xE000E108,0x00000080); // enable USART6 interrupt
 }
 
@@ -160,6 +261,31 @@ int uart_init () {
     uart1_init();
 	uart6_init();
 	return 0;
+}
+
+void uart1_handler() {
+	int data,sr;
+
+	sr = GET32(USART1_SR);
+	if (sr & (1<<3))
+	{
+		turnOnLed(RED);
+		while (1) {}
+	}
+	else {
+		data = GET32(USART1_DR);
+		if (counter < UART_BUF_MAX_DIM) {
+			if ((writer < UART_BUF_MAX_DIM)) {
+				uart_buf[writer] = data;
+				writer++; 
+			}
+			else {
+				writer = 0;
+				uart_buf[writer] = GET32(USART6_DR);
+			}
+			counter++;
+		}
+	}
 }
 
 void uart6_handler() {
@@ -184,35 +310,6 @@ void uart6_handler() {
 			}
 			counter++;
 		}
-	}
-}
-
-void enableUserButton() {
-	unsigned int ra;
-
-	ra = GET32(RCCBASE+0x30);
-    ra |= 1; //enable port A
-    PUT32(RCCBASE+0x30,ra);
-
-	ra = GET32(GPIOABASE+0x00);
-    ra &= 0xFFFFFFFB;
-    PUT32(GPIOABASE+0x00,ra);
-}
-
-void checkUserButton() {
-	while (!(GET32(GPIOABASE+0x10) & 0x00000001))
-		continue;
-}
-
-void timdelay ( void )
-{
-	unsigned int ra;
-	unsigned int rb;
-	rb=GET32(TIM5BASE+0x24);
-	while(1)
-	{
-		ra=GET32(TIM5BASE+0x24);
-		if((ra-rb)>=(168000000*4)) break;
 	}
 }
 
@@ -247,62 +344,54 @@ int random(void *data, unsigned char *output, unsigned int len, unsigned int *ol
     return(0);	
 }
 
-int random2(void *data, unsigned char *output, unsigned int len, unsigned int *olen) 
-{
-    int i = 0;
-    char random_bytes[4] = {0xE3,0xA5,0x76,0xDC};
-
-	while ((i < 4) && (i < (int) len)) {
-		output[i] = random_bytes[i];
-		i++;
-	}
-	
-	*olen = (size_t) i;
-	return 0;
-}
-
 void turnOnLed(int led) {
+	unsigned int ra;
+
 	switch (led) {
-		case GREEN:
-			PUT32(GPIODBASE+0x18,0xE0001000);
+		case OFF:
+			PUT32(GPIOD_BSRR,0xFFFF0FFF);
 			break;
-		case RED:
-			PUT32(GPIODBASE+0x18,0xB0004000);
+		case GREEN:
+			ra = GET32(GPIOD_BSRR);
+			ra &= 0xEFFFFFFF;
+			ra |= (1<<12);
+			PUT32(GPIOD_BSRR,ra);
 			break;
 		case ORANGE:
-			PUT32(GPIODBASE+0x18,0xD0002000);
+			ra = GET32(GPIOD_BSRR);
+			ra &= 0xDFFFFFFF;
+			ra |= (1<<13);
+			PUT32(GPIOD_BSRR,ra);
+			break;
+		case RED:
+			ra = GET32(GPIOD_BSRR);
+			ra &= 0xBFFFFFFF;
+			ra |= (1<<14);
+			PUT32(GPIOD_BSRR,ra);
 			break;
 		case BLUE:
-			PUT32(GPIODBASE+0x18,0x70008000);
+			ra = GET32(GPIOD_BSRR);
+			ra &= 0x7FFFFFFF;
+			ra |= (1<<15);
+			PUT32(GPIOD_BSRR,ra);
 			break;
 	}
 }
 
-void uart_putc ( unsigned int x )
+void uart_putc ( unsigned int x, int uart )
 {
-    while (( GET32(USART1_SR) & (1<<7)) == 0) continue;
-    PUT32(USART1_DR,x);
+	if (uart == UART1) {
+    	while (( GET32(USART1_SR) & (1<<7)) == 0) continue;
+    	PUT32(USART1_DR,x);
+	}
+	else if (uart == UART6) {
+		while (( GET32(USART6_SR) & (1<<7)) == 0) continue;
+    	PUT32(USART6_DR,x);
+	}
 }
 
 unsigned int uart_getc ( void )
 {
-	/*
-	unsigned int sr,val;
-
-    while (1) {
-        sr = GET32(USART6_SR);
-        if (sr & (1 << 5)) {
-			if ((sr & (1 << 1)) || (sr & (1 << 4))) {
-				GET32(USART6_DR);
-				continue;
-			}
-            else {
-				val = GET32(USART6_DR);
-                return(val);
-			}
-        }
-    }
-	*/
 	int data;	
 
 	while (counter == 0) continue;
@@ -313,12 +402,12 @@ unsigned int uart_getc ( void )
 	return data;
 }
 
-void uart_string (unsigned char *s,unsigned char len)
+void uart_string (unsigned char *s,unsigned char len,int uart)
 {
 	unsigned char *cur = s;
 
     while ((cur-s) < len) {
-        uart_putc(*cur);
+        uart_putc(*cur,uart);
 		cur++;
 	}
 }
@@ -329,13 +418,12 @@ void uart_getstring(unsigned char *buf,unsigned int len) {
 	
 	while (i < len) {
 		rec = uart_getc();
-		//if ((rec != 0x00) && (rec != 0xFF)) {
-			buf[i] = rec;
-			i++;
-         
-		//}
+		buf[i] = rec;
+		i++;
 	}
 }
+
+// SELF IMPLEMENTATION OF FUNCTIONS FROM THE C STDLIB
 
 void *memcpy(void *dest, const void *src, unsigned int n)
 {

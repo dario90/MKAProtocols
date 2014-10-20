@@ -1,5 +1,4 @@
 # include "polarssl/ecp.h"
-# include "polarssl/ecdh.h"
 # include "polarssl/bignum.h"
 # include "polarssl/ctr_drbg.h"
 

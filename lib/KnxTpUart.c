@@ -29,16 +29,16 @@ void setListenToBroadcasts(bool listen) {
     knx.listen_to_broadcasts = listen;
 }
 
-void uartReset() {
+void uartReset(int uart) {
 	uint8_t sendByte = 0x01;
 
-	uart_putc(sendByte); // New implementation
+	uart_putc(sendByte,uart); // New implementation
 }
 
-void uartStateRequest() {
+void uartStateRequest(int uart) {
 	uint8_t sendByte = 0x02;
 
-	uart_putc(sendByte); // New implementation
+	uart_putc(sendByte,uart); // New implementation
 }
 
 void setIndividualAddress(int area, int line, int member) {
@@ -80,15 +80,7 @@ bool isKNXControlByte(int b) {
 }
 
 void checkErrors() {
-	unsigned int sr;
-
-	sr = GET32(USART2_SR);
-	if (sr & (1 << 3))
-		PUT32(GPIODBASE+0x18,0xA0005000); // red-green, overrun error
-	else if (sr & (1 << 1))
-		PUT32(GPIODBASE+0x18,0x3000C000); // red-blue, frame error
-	else if (sr & 1)
-		PUT32(GPIODBASE+0x18,0x90006000); // red-orange, parity error
+	// TODO checkErrors() routine
 }
 
 bool readKNXTelegram() {
@@ -146,14 +138,14 @@ bool groupWriteBool(int mainGroup, int middleGroup, int subGroup, bool value) {
 	}
 	
 	createKNXMessageFrame(2, KNX_COMMAND_WRITE, mainGroup, middleGroup, subGroup, valueAsInt);
-	return sendMessage();
+	return sendMessage(UART1);
 }
 
 bool groupWrite2ByteFloat(int mainGroup, int middleGroup, int subGroup, float value) {
 	createKNXMessageFrame(2, KNX_COMMAND_WRITE, mainGroup, middleGroup, subGroup, 0);
 	set2ByteFloatValue(&knx.tg, value);
 	createChecksum(&knx.tg);
-	return sendMessage();
+	return sendMessage(UART1);
 }
 
 bool groupAnswerBool(int mainGroup, int middleGroup, int subGroup, bool value) {
@@ -163,20 +155,20 @@ bool groupAnswerBool(int mainGroup, int middleGroup, int subGroup, bool value) {
 	}
 	
 	createKNXMessageFrame(2, KNX_COMMAND_ANSWER, mainGroup, middleGroup, subGroup, valueAsInt);
-	return sendMessage();
+	return sendMessage(UART1);
 }
 
 bool groupAnswer2ByteFloat(int mainGroup, int middleGroup, int subGroup, float value) {
 	createKNXMessageFrame(2, KNX_COMMAND_ANSWER, mainGroup, middleGroup, subGroup, 0);
 	set2ByteFloatValue(&knx.tg, value);
 	createChecksum(&knx.tg);
-	return sendMessage();
+	return sendMessage(UART1);
 }
 
 bool individualAnswerAddress() {
     createKNXMessageFrame(2, KNX_COMMAND_INDIVIDUAL_ADDR_RESPONSE, 0, 0, 0, 0);
 	createChecksum(&knx.tg);
-	return sendMessage();    
+	return sendMessage(UART1);    
 }
 
 bool individualAnswerMaskVersion(int area, int line, int member) {
@@ -185,7 +177,7 @@ bool individualAnswerMaskVersion(int area, int line, int member) {
     setBufferByte(&knx.tg, 8, 0x07); // Mask version part 1 for BIM M 112
     setBufferByte(&knx.tg, 9, 0x01); // Mask version part 2 for BIM M 112
     createChecksum(&knx.tg);
-    return sendMessage();
+    return sendMessage(UART1);
 }
 
 bool individualAnswerAuth(int accessLevel, int sequenceNo, int area, int line, int member) {
@@ -194,7 +186,7 @@ bool individualAnswerAuth(int accessLevel, int sequenceNo, int area, int line, i
     setSequenceNumber(&knx.tg, sequenceNo);
     setBufferByte(&knx.tg, 8, accessLevel);
     createChecksum(&knx.tg);
-    return sendMessage();
+    return sendMessage(UART1);
 }
 
 void createKNXMessageFrame(int payloadlength, KnxCommandType command, int mainGroup, int middleGroup, int subGroup, int firstDataByte) {
@@ -227,16 +219,16 @@ bool sendNCDPosConfirm(int sequenceNo, int area, int line, int member) {
     setPayloadLength(&knx.tg_ptp, 1);
 	createChecksum(&knx.tg_ptp);
     
-	return sendMessage();
+	return sendMessage(UART1);
 }
 
-bool sendMessage() {
+bool sendMessage(int uart) {
 	int i,confirmation,messageSize = getTotalLength(&knx.tg);
 
 	uint8_t send;
 	for (i = 0; i < messageSize; i++) {
 		send = getBufferByte(&knx.tg, i);
-		uart_putc(send);
+		uart_putc(send,uart);
 	}
 
 	confirmation = true;
@@ -251,16 +243,16 @@ bool sendMessage() {
 	*/
 }
 
-void sendAck() {
+void sendAck(int uart) {
 	uint8_t sendByte = 0b11001100;
 	
-	uart_putc(sendByte);
+	uart_putc(sendByte,uart);
 }
 
-void sendNotAddressed() {
+void sendNotAddressed(int uart) {
 	uint8_t sendByte = 0b00010000;
 	
-	uart_putc(sendByte);
+	uart_putc(sendByte,uart);
 }
 
 int serialRead() {
@@ -291,7 +283,7 @@ bool isListeningToGroupAddress(int main, int middle, int sub) {
 	return false;
 }
 
-void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,int len) {
+void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,int len,int uart) {
 	int i = 0,j = 7;
 
 	clear(&knx.tg);
@@ -306,13 +298,38 @@ void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,i
 		else {
 			setPayloadLength(&knx.tg,j-6);
 			createChecksum(&knx.tg);
-			sendMessage();
+			sendMessage(uart);
 			j = 7;	
 		}
 	}	
 	setPayloadLength(&knx.tg,j-6);
 	createChecksum(&knx.tg);
-	sendMessage();
+	sendMessage(uart);
+}
+
+void sendDataIndividual(int area, int line, int member,
+                        unsigned char *data,int len,int uart) {
+	int i = 0,j = 7;
+
+	clear(&knx.tg);
+	setSourceAddress(&knx.tg, knx.source_area, knx.source_line, knx.source_member);
+	setTargetIndividualAddress(&knx.tg, area, line, member);
+	
+	while (i < len) {
+		if (j < (MAX_KNX_TELEGRAM_SIZE-1)) {
+			setBufferByte(&knx.tg,j,(int) data[i]);
+			i++; j++;
+		}
+		else {
+			setPayloadLength(&knx.tg,j-6);
+			createChecksum(&knx.tg);
+			sendMessage(uart);
+			j = 7;	
+		}
+	}	
+	setPayloadLength(&knx.tg,j-6);
+	createChecksum(&knx.tg);
+	sendMessage(uart);
 }
 
 void getReceivedPayload(unsigned char *payload,int *olen) {
@@ -341,6 +358,6 @@ void receiveData(unsigned char *buf,int len) {
 				len = 0;
 			}
 		}
-		else turnOnLed(RED);
+		else turnOnLed(ORANGE);
 	}
 }

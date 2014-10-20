@@ -4,13 +4,14 @@ LIBGCC = /home/dario/gcc-arm-none-eabi-4_8-2014q2/lib/gcc/arm-none-eabi/4.8.4/ar
 
 CFLAGS  += -I../include -c -D_FILE_OFFSET_BITS=64 -Wall -W -Wdeclaration-after-statement
 
-OBJS =	entropy.o	entropy_poll.o	ctr_drbg.o	sha512.o	aes.o	bignum.o	ecp.o	ecdh.o	ecp_curves.o
+OBJS =	entropy.o	entropy_poll.o	ctr_drbg.o	sha512.o	aes.o	bignum.o	ecp.o	ecp_curves.o
 
 stm32: entropy.gcc.thumb.o	entropy_poll.gcc.thumb.o	ctr_drbg.gcc.thumb.o \
-sha512.gcc.thumb.o	aes.gcc.thumb.o	bignum.gcc.thumb.o	ecp.gcc.thumb.o	ecdh.gcc.thumb.o \
+sha512.gcc.thumb.o	aes.gcc.thumb.o	bignum.gcc.thumb.o	ecp.gcc.thumb.o \
 ecp_curves.gcc.thumb.o	platform.gcc.thumb.o	memory_buffer_alloc.gcc.thumb.o \
 stm32f4d_helper.gcc.thumb.o	util.gcc.thumb.o bd1.gcc.thumb.o \
-bd2.gcc.thumb.o	mka.gcc.thumb.o	KnxTelegram.gcc.thumb.o	KnxTpUart.gcc.thumb.o
+bd2.gcc.thumb.o	mka.gcc.thumb.o		gdh2.gcc.thumb.o \
+KnxTelegram.gcc.thumb.o	KnxTpUart.gcc.thumb.o
 
 entropy_poll.gcc.thumb.o: entropy_poll.c
 	$(ARMGNU)-gcc $(COPS) -mthumb -c entropy_poll.c -o entropy_poll.gcc.thumb.o
@@ -28,8 +29,6 @@ ecp.gcc.thumb.o: ecp.c
 	$(ARMGNU)-gcc $(COPS) -mthumb -c ecp.c -o ecp.gcc.thumb.o
 ecp_curves.gcc.thumb.o: ecp_curves.c
 	$(ARMGNU)-gcc $(COPS) -mthumb -c ecp_curves.c -o ecp_curves.gcc.thumb.o
-ecdh.gcc.thumb.o: ecdh.c
-	$(ARMGNU)-gcc $(COPS) -mthumb -c ecdh.c -o ecdh.gcc.thumb.o
 platform.gcc.thumb.o: platform.c
 	$(ARMGNU)-gcc $(COPS) -mthumb -c platform.c -o platform.gcc.thumb.o
 memory_buffer_alloc.gcc.thumb.o: memory_buffer_alloc.c
@@ -44,13 +43,16 @@ bd2.gcc.thumb.o: bd2.c $(OBJS2)
 	$(ARMGNU)-gcc $(COPS) -mthumb -c bd2.c -o bd2.gcc.thumb.o
 mka.gcc.thumb.o: mka.c $(OBJS2)
 	$(ARMGNU)-gcc $(COPS) -mthumb -c mka.c -o mka.gcc.thumb.o
+gdh2.gcc.thumb.o: gdh2.c $(OBJS2)
+	$(ARMGNU)-gcc $(COPS) -mthumb -c gdh2.c -o gdh2.gcc.thumb.o
 KnxTelegram.gcc.thumb.o: KnxTelegram.c 
 	$(ARMGNU)-gcc $(COPS) -mthumb -c KnxTelegram.c -o KnxTelegram.gcc.thumb.o
 KnxTpUart.gcc.thumb.o: KnxTpUart.c stm32f4d_helper.gcc.thumb.o
 	$(ARMGNU)-gcc $(COPS) -mthumb -c KnxTpUart.c -o KnxTpUart.gcc.thumb.o
 
 
-local: aes.o	bignum.o	ctr_drbg.o	ecdh.o	ecp.o	ecp_curves.o	entropy.o	entropy_poll.o	sha512.o	util.o	bd1.o	bd2.o	mka.o
+local: aes.o	bignum.o	ctr_drbg.o	ecp.o	ecp_curves.o \
+entropy.o	entropy_poll.o	sha512.o	util.o	bd1.o	bd2.o	mka.o	gdh2.o
 
 aes.o: aes.c
 	$(CC) $(CFLAGS) aes.c $(LDFLAGS) -o aes.o
@@ -58,8 +60,6 @@ bignum.o: bignum.c
 	$(CC) $(CFLAGS)  bignum.c $(LDFLAGS) -o bignum.o
 ctr_drbg.o: ctr_drbg.c
 	$(CC) $(CFLAGS) ctr_drbg.c $(LDFLAGS) -o ctr_drbg.o
-ecdh.o: ecdh.c
-	$(CC) $(CFLAGS) ecdh.c $(LDFLAGS) -o ecdh.o
 ecp.o: ecp.c
 	$(CC) $(CFLAGS) ecp.c $(LDFLAGS) -o ecp.o
 ecp_curves.o: ecp_curves.c
@@ -78,6 +78,8 @@ bd2.o: bd2.c
 	$(CC) $(CFLAGS) bd2.c $(LDFLAGS) -o bd2.o
 mka.o: mka.c
 	$(CC) $(CFLAGS) mka.c $(LDFLAGS) -o mka.o
+gdh2.o: gdh2.c
+	$(CC) $(CFLAGS) gdh2.c $(LDFLAGS) -o gdh2.o
 
 clean: 
 	rm *.o

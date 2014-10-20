@@ -28,15 +28,15 @@ typedef enum {
 }KnxTpUartSerialEventType;
 
 	void inizializzaKnxTpUart(int, int, int);
-	void uartReset();
-	void uartStateRequest();
+	void uartReset(int uart);
+	void uartStateRequest(int uart);
 	//KnxTpUartSerialEventType serialEvent();
 	KnxTelegram getReceivedTelegram();
 	
     void setIndividualAddress(int, int, int);
     
-	void sendAck();
-	void sendNotAddressed();
+	void sendAck(int uart);
+	void sendNotAddressed(int uart);
 	
 	bool groupWriteBool(int, int, int, bool);
 	bool groupWrite2ByteFloat(int, int, int, float);
@@ -61,10 +61,11 @@ typedef enum {
 	bool readKNXTelegram();
 	void createKNXMessageFrame(int, KnxCommandType, int, int, int, int);
 	void createKNXMessageFrameIndividual(int, KnxCommandType, int, int, int, int);
-	bool sendMessage();
+	bool sendMessage(int uart);
     bool sendNCDPosConfirm(int, int, int, int);
 	int serialRead();
-	void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,int len);
+	void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,int len,int uart);
+	void sendDataIndividual(int area, int line, int member, unsigned char *data,int len,int uart);
 	void getReceivedPayload(unsigned char *payload,int *olen);
 	void receiveData(unsigned char *buf,int len);
 

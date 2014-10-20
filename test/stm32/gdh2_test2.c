@@ -1,23 +1,30 @@
-# include "bd1.h"
+# include "gdh2.h"
 # include "polarssl/entropy.h"
 # include "polarssl/memory_buffer_alloc.h"
 # include "stm32f4d_helper.h"
 # include "KnxTpUart.h"
 # include <string.h>
 
-# define N      2
+# define N      3
 # define LEN    66
-# define area   0
-# define line   0
-# define member 10
+# define BUFLEN N*LEN
 
+# define area1   0
+# define line1   0
+# define member1 1
+# define area2   0
+# define line2   0
+# define member2 2
+# define area3   0
+# define line3   0
+# define member3 3
 
 int notmain() {
 	unsigned int olen;
 	int ret;
-	char personalization[] = "server";
-	unsigned char data_rec[2*LEN],data_sent[LEN],buf[10000];
-	bd1_context ctx;
+	char personalization[] = "gdh2 test";
+	unsigned char data_sent[BUFLEN],data_rec[BUFLEN],buf[15000];;
+	gdh2_context ctx;
 	ctr_drbg_context ctr_drbg;
     entropy_context entropy;
 	ecp_group_id grp_id = POLARSSL_ECP_DP_SECP256R1;
@@ -38,42 +45,32 @@ int notmain() {
 		return(ret);
 	}
 
-	inizializzaKnxTpUart(area,line,member);
-	setListenToBroadcasts(true);
+	inizializzaKnxTpUart(area3,line3,member3);
 
-	if ((ret = bd1_init(&ctx,grp_id)) != 0) {
-		turnOnLed(RED);
-    	entropy_free( &entropy );
-		return(ret);
-	}
+	turnOnLed(GREEN);
+	gdh2_init(&ctx,grp_id,N,&ctr_drbg);
 
-	if ((ret = bd1_gen_point(&ctx,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
-    	entropy_free( &entropy );
-		return(ret);
-	}
-
-	sendData(0,0,0,data_sent,LEN,UART1);
-	receiveData(data_rec,(N-1)*LEN);
+	receiveData(data_rec,BUFLEN);
 	turnOnLed(BLUE);
 
-	memcpy(data_rec+LEN,data_rec,LEN);
-	if ((ret = bd1_gen_value(&ctx,data_rec,2*LEN,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
+	if ((ret = gdh2_make_val(&ctx,3,data_rec,BUFLEN,&olen,data_sent,BUFLEN,&ctr_drbg)) != 0) {
 		turnOnLed(RED);
     	entropy_free( &entropy );
 		return(ret);
 	}
 
-	if ((ret = bd1_compute_key(&ctx,data_rec,LEN,2,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
+	sendData(0,0,0,data_sent,olen,UART1);
+
+	if ((ret = gdh2_export_key(&ctx,&olen,data_sent,BUFLEN)) != 0) {
 		turnOnLed(RED);
     	entropy_free( &entropy );
 		return(ret);
-	}
-	
-	turnOnLed(GREEN);
-	
+	}	
+
+	turnOnLed(OFF);
+
 	entropy_free(&entropy);
-	bd1_free(&ctx);
-
+	gdh2_free(&ctx);
+	
 	return 0;
 }

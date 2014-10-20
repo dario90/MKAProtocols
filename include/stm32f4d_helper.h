@@ -8,11 +8,44 @@
 #define RCC_AHB2ENR (RCCBASE+0x34)
 #define RCC_APB2ENR (RCCBASE+0x44)
 
-#define GPIODBASE 0x40020C00
-#define TIM5BASE 0x40000C00
+// Flash memory
 #define FLASH_ACR 0x40023C00
-#define GPIOABASE 0x40020000
-#define GPIOA_MODER (GPIOABASE+0x00)
+// GPIO A
+#define GPIOA_BASE 0x40020000
+#define GPIOA_MODER (GPIOA_BASE+0x00)
+#define GPIOA_AFRL (GPIOA_BASE+0x20)
+#define GPIOA_OTYPER (GPIOA_BASE+0x04)
+#define GPIOA_AFRL (GPIOA_BASE+0x20)
+#define GPIOA_AFRH (GPIOA_BASE+0x24)
+#define GPIOA_OTYPER (GPIOA_BASE+0x04)
+#define GPIOA_OSPEED (GPIOA_BASE+0x08)
+#define GPIOA_PUPDR (GPIOA_BASE+0x0C)
+// GPIO B
+#define GPIOB_BASE 0x40020400
+#define GPIOB_MODER (GPIOB_BASE+0x00)
+#define GPIOB_AFRL (GPIOB_BASE+0x20)
+#define GPIOB_AFRH (GPIOB_BASE+0x24)
+#define GPIOB_OTYPER (GPIOB_BASE+0x04)
+#define GPIOB_OSPEED (GPIOB_BASE+0x08)
+#define GPIOB_PUPDR (GPIOB_BASE+0x0C)
+// GPIO C
+#define GPIOC_BASE 0x40020800
+#define GPIOC_MODER (GPIOC_BASE+0x00)
+#define GPIOC_AFRL (GPIOC_BASE+0x20)
+#define GPIOC_AFRH (GPIOC_BASE+0x24)
+#define GPIOC_OTYPER (GPIOC_BASE+0x04)
+#define GPIOC_OSPEED (GPIOC_BASE+0x08)
+#define GPIOC_PUPDR (GPIOC_BASE+0x0C)
+// GPIO D
+#define GPIOD_BASE 0x40020C00
+#define GPIOD_MODER (GPIOD_BASE+0x00)
+#define GPIOD_AFRL (GPIOD_BASE+0x20)
+#define GPIOD_AFRH (GPIOD_BASE+0x24)
+#define GPIOD_OTYPER (GPIOD_BASE+0x04)
+#define GPIOD_OSPEED (GPIOD_BASE+0x08)
+#define GPIOD_PUPDR (GPIOD_BASE+0x0C)
+#define GPIOD_BSRR (GPIOD_BASE+0x18)
+// USART 1
 #define USART1_BASE 0x40011000
 #define USART1_SR (USART1_BASE+0x00)
 #define USART1_DR (USART1_BASE+0x04)
@@ -21,22 +54,7 @@
 #define USART1_CR2 (USART1_BASE+0x10)
 #define USART1_CR3 (USART1_BASE+0x14)
 #define USART1_GTPR (USART1_BASE+0x18)
-#define USART2_BASE 0x40004400
-#define USART2_SR (USART2_BASE+0x00)
-#define USART2_DR (USART2_BASE+0x04)
-#define USART2_BRR (USART2_BASE+0x08)
-#define USART2_CR1 (USART2_BASE+0x0C)
-#define USART2_CR2 (USART2_BASE+0x10)
-#define USART2_CR3 (USART2_BASE+0x14)
-#define USART2_GTPR (USART2_BASE+0x18)
-#define USART3_BASE 0x40004800
-#define USART3_SR (USART3_BASE+0x00)
-#define USART3_DR (USART3_BASE+0x04)
-#define USART3_BRR (USART3_BASE+0x08)
-#define USART3_CR1 (USART3_BASE+0x0C)
-#define USART3_CR2 (USART3_BASE+0x10)
-#define USART3_CR3 (USART3_BASE+0x14)
-#define USART3_GTPR (USART3_BASE+0x18)
+// UART 6
 #define USART6_BASE 0x40011400
 #define USART6_SR (USART6_BASE+0x00)
 #define USART6_DR (USART6_BASE+0x04)
@@ -45,24 +63,8 @@
 #define USART6_CR2 (USART6_BASE+0x10)
 #define USART6_CR3 (USART6_BASE+0x14)
 #define USART6_GTPR (USART6_BASE+0x18)
-#define GPIOA_AFRL (GPIOABASE+0x20)
-#define GPIOA_OTYPER (GPIOABASE+0x04)
-#define GPIOB_BASE 0x40020400
-#define GPIOB_MODER (GPIOB_BASE+0x00)
-#define GPIOB_AFRL (GPIOB_BASE+0x20)
-#define GPIOB_AFRH (GPIOB_BASE+0x24)
-#define GPIOB_OTYPER (GPIOB_BASE+0x04)
-#define GPIOB_OSPEED (GPIOB_BASE+0x08)
-#define GPIOB_PUPDR (GPIOB_BASE+0x0C)
-#define GPIOC_BASE 0x40020800
-#define GPIOC_MODER (GPIOC_BASE+0x00)
-#define GPIOC_AFRL (GPIOC_BASE+0x20)
-#define GPIOC_AFRH (GPIOC_BASE+0x24)
-#define GPIOC_OTYPER (GPIOC_BASE+0x04)
-#define GPIOC_OSPEED (GPIOC_BASE+0x08)
-#define GPIOC_PUPDR (GPIOC_BASE+0x0C)
 
-// --- only for stm32f4d07 ---
+// --- RNG only for stm32f4d07 ---
 #define RNG_BASE 0x50060800
 #define RNG_CR (RNG_BASE+0x00)
 #define RNG_SR (RNG_BASE+0x04)
@@ -70,12 +72,25 @@
 // --- only for stm32f4d07 ---
 
 // LEDS
-#define GREEN   0
-#define RED     1
-#define ORANGE  2  
-#define BLUE    3
+#define OFF       0
+#define GREEN     1
+#define RED       2
+#define ORANGE    3
+#define BLUE      4
+
+// CLOCK SPEED 
+# define CLOCK8   (2<<24)|(1<<22)|(3<<16)|(64<<6)|(8<<0)
+# define CLOCK16  (2<<24)|(1<<22)|(2<<16)|(48<<6)|(4<<0)
+# define CLOCK32  (4<<24)|(1<<22)|(2<<16)|(96<<6)|(4<<0)
+# define CLOCK42  (7<<24)|(1<<22)|(3<<16)|(168<<6)|(4<<0)
+# define CLOCK64  (8<<24)|(1<<22)|(2<<16)|(192<<6)|(4<<0)
+# define CLOCK120 (5<<24)|(1<<22)|(((2>>1)-1)<<16)|(120<<6)|(4<<0)
+# define CLOCK168 (7<<24)|(1<<22)|(((2>>1)-1)<<16)|(210<<6)|(5<<0)
 
 #define UART_BUF_MAX_DIM 1000
+
+# define UART1 1
+# define UART6 6
 
 extern volatile int reader;
 extern volatile int writer;
@@ -98,27 +113,21 @@ void init(void);
 // init uart peripheral
 int uart_init ();
 
-void enableUserButton();
-void checkUserButton();
-
-void timdelay ( void );
-
 // random function to be added as an entropy source
 // generates 4 random bytes through hardware RNG and store them in output
 // in case of error it returns POLARSSL_ERR_ENTROPY_SOURCE_FAILED 
 int random(void *data, unsigned char *output, unsigned int len, unsigned int *olen);
-int random2(void *data, unsigned char *output, unsigned int len, unsigned int *olen);
 
 void turnOnLed(int led);
 
 // send one byte via uart
-void uart_putc (unsigned int x);
+void uart_putc (unsigned int x,int uart);
 
 // receive one byte via uart
 unsigned int uart_getc (void);
 
 // send len byes via uart
-void uart_string (unsigned char *s,unsigned char len);
+void uart_string (unsigned char *s,unsigned char len,int uart);
 
 // receive len bytes via uart
 void uart_getstring(unsigned char *buf,unsigned int len);

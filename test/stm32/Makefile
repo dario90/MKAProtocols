@@ -4,17 +4,17 @@ COPS = -I../../include -ggdb -Wall -nostdlib -nostartfiles -ffreestanding
 
 OBJS = ../../lib/entropy.gcc.thumb.o	../../lib/entropy_poll.gcc.thumb.o	\
 ../../lib/ctr_drbg.gcc.thumb.o	../../lib/sha512.gcc.thumb.o	../../lib/aes.gcc.thumb.o	\
-../../lib/bignum.gcc.thumb.o	../../lib/ecp.gcc.thumb.o	../../lib/ecdh.gcc.thumb.o \
+../../lib/bignum.gcc.thumb.o	../../lib/ecp.gcc.thumb.o \
 ../../lib/ecp_curves.gcc.thumb.o	../../lib/platform.gcc.thumb.o	\
 ../../lib/memory_buffer_alloc.gcc.thumb.o	../../lib/stm32f4d_helper.gcc.thumb.o \
 ../../lib/util.gcc.thumb.o	../../lib/KnxTelegram.gcc.thumb.o \
 ../../lib/KnxTpUart.gcc.thumb.o ../../lib/bd1.gcc.thumb.o	\
-../../lib/bd2.gcc.thumb.o	../../lib/mka.gcc.thumb.o
+../../lib/bd2.gcc.thumb.o	../../lib/mka.gcc.thumb.o	../../lib/gdh2.gcc.thumb.o
 
 LIBGCC = /home/dario/gcc-arm-none-eabi-4_8-2014q2/lib/gcc/arm-none-eabi/4.8.4/armv7-m/libgcc.a
 
 all: mka_test.gcc.thumb.bin	bd1_test.gcc.thumb.bin	bd2_test_root.gcc.thumb.bin \
-bd2_test_node.gcc.thumb.bin
+bd2_test_node.gcc.thumb.bin	gdh2_test1.gcc.thumb.bin	gdh2_test2.gcc.thumb.bin
 
 vectors.o : vectors.s
 	$(ARMGNU)-as vectors.s -o vectors.o
@@ -39,9 +39,21 @@ bd2_test_root.gcc.thumb.bin : memmap vectors.o bd2_test_root.gcc.thumb.o $(OBJS)
 
 bd2_test_node.gcc.thumb.o: bd2_test_node.c $(OBJS)
 	$(ARMGNU)-gcc $(COPS) -mthumb -c bd2_test_node.c -o bd2_test_node.gcc.thumb.o
-bd2_test_root.gcc.thumb.bin : memmap vectors.o bd2_test_node.gcc.thumb.o $(OBJS)
+bd2_test_node.gcc.thumb.bin : memmap vectors.o bd2_test_node.gcc.thumb.o $(OBJS)
 	$(ARMGNU)-ld -o bd2_test_node.gcc.thumb.elf -T memmap vectors.o bd2_test_node.gcc.thumb.o  $(OBJS) $(LIBGCC)
 	$(ARMGNU)-objcopy bd2_test_node.gcc.thumb.elf bd2_test_node.gcc.thumb.bin -O binary
+
+gdh2_test1.gcc.thumb.o: gdh2_test1.c $(OBJS)
+	$(ARMGNU)-gcc $(COPS) -mthumb -c gdh2_test1.c -o gdh2_test1.gcc.thumb.o
+gdh2_test1.gcc.thumb.bin : memmap vectors.o gdh2_test1.gcc.thumb.o $(OBJS)
+	$(ARMGNU)-ld -o gdh2_test1.gcc.thumb.elf -T memmap vectors.o gdh2_test1.gcc.thumb.o  $(OBJS) $(LIBGCC)
+	$(ARMGNU)-objcopy gdh2_test1.gcc.thumb.elf gdh2_test1.gcc.thumb.bin -O binary
+
+gdh2_test2.gcc.thumb.o: gdh2_test2.c $(OBJS)
+	$(ARMGNU)-gcc $(COPS) -mthumb -c gdh2_test2.c -o gdh2_test2.gcc.thumb.o
+gdh2_test2.gcc.thumb.bin : memmap vectors.o gdh2_test2.gcc.thumb.o $(OBJS)
+	$(ARMGNU)-ld -o gdh2_test2.gcc.thumb.elf -T memmap vectors.o gdh2_test2.gcc.thumb.o  $(OBJS) $(LIBGCC)
+	$(ARMGNU)-objcopy gdh2_test2.gcc.thumb.elf gdh2_test2.gcc.thumb.bin -O binary
 
 clean:
 	rm *.o

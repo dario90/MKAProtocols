@@ -15,9 +15,15 @@ ecp_group_id id = POLARSSL_ECP_DP_SECP256R1;
 
 void *chair(void *arg) {
 	int ret,i;
+	unsigned char pubvalue[66];
 	bd2_context ctx;
 
 	bd2_init(&ctx,id);
+
+	if ((ret = bd2_make_public(&ctx,&olen,pubvalue,sizeof(pubvalue),&ctr_drbg)) != 0) {
+		printf("Chair: failed generating dh keypair\n");
+		return NULL;
+	} else printf("Chair: dh keypair generated, %d bytes written\n",olen);
 
 	if ((ret = bd2_make_key(&ctx,&ctr_drbg)) != 0) {
 		printf("Chair: failed generating key\n");
@@ -26,11 +32,8 @@ void *chair(void *arg) {
 	bd2_export_key(&ctx,&olen,key,sizeof(key));
 
 	for (i = 1; i < n; i++) {
-		if ((ret = bd2_make_public(&ctx,&olen,buf,sizeof(buf),&ctr_drbg)) != 0) {
-			printf("Chair: failed generating dh keypair\n");
-			return NULL;
-		} else printf("Chair: #%d dh keypair generated, %d bytes written\n",i,olen);
-		
+		memcpy(buf,pubvalue,sizeof(pubvalue));		
+
 		sem_post(&sem[i]); sem_wait(&sem[0]);
 		
 		if ((ret = bd2_read_public(&ctx,buf,olen))) {
@@ -58,8 +61,8 @@ void *node(void *arg) {
 	bd2_init(&ctx,id);
 	sem_wait(&sem[i]);
 
-	if ((ret = bd2_read_public(&ctx,buf,olen)) != 0) {
-		printf("Node #%d: error reading peer's public value\n",i);
+	if ((ret = bd2_read_public(&ctx,buf,sizeof(buf))) != 0) {
+		printf("Node #%d: error %d reading peer's public value\n",i,ret);
 		return NULL;
 	}
 

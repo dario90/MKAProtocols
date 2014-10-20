@@ -56,7 +56,7 @@
 .word   hang
 .word   hang
 .word   hang
-.word   hang
+.word   uart1_handler
 .word   hang
 .word   hang
 .word   hang
@@ -98,6 +98,7 @@ _start:
     /*ldr r0,stacktop */
     /*mov sp,r0*/
     bl handler_reset
+	bl notmain
     b hang
 
 .thumb_func

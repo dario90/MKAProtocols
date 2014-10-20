@@ -5,13 +5,6 @@
 # include "KnxTpUart.h"
 # include <string.h>
 
-extern unsigned long _data_flash;
-extern unsigned long _data_begin;
-extern unsigned long _data_end;
-extern unsigned long _bss_begin;
-extern unsigned long _bss_end;
-extern unsigned long _stack_end;
-
 # define N      2
 # define LEN    66
 # define area   0
@@ -47,6 +40,8 @@ int notmain() {
 	inizializzaKnxTpUart(area,line,member);
 	setListenToBroadcasts(true);
 
+	turnOnLed(GREEN);
+
 	if ((ret = mka_init(&ctx,grp_id)) != 0) {
 		turnOnLed(RED);
 		entropy_free(&entropy);
@@ -66,7 +61,7 @@ int notmain() {
 			return (ret);
 		}
 		
-		sendData(0,0,0,data_sent,LEN);
+		sendData(0,0,0,data_sent,LEN,UART1);
 		receiveData(data_rec,(N-1)*LEN);
 		turnOnLed(BLUE);
 
@@ -83,34 +78,10 @@ int notmain() {
 		return (ret);
 	}
 	
-	turnOnLed(GREEN);
+	turnOnLed(OFF);
 
 	entropy_free(&entropy);
 	mka_free(&ctx);
 
 	return 0;
-}
-
-void handler_reset(void)
-{
-    unsigned long *source;
-    unsigned long *destination;
-    // Copying data from Flash to RAM
-    source = &_data_flash;
-    for (destination = &_data_begin; destination < &_data_end;)
-    {
-        *(destination++) = *(source++);
-    }   
-    // default zero to undefined variables
-    for (destination = &_bss_begin; destination < &_bss_end;)
-    {
-        *(destination++) = 0;
-    }
-
-	// init clock, leds, rng, uart
-	clock_init();
-	init();
-	rnd_init();
-	uart_init(); 
-    notmain();
 }

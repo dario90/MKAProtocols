@@ -2,13 +2,21 @@
 
 // context initialization
 int bd2_init(bd2_context *ctx,ecp_group_id id) {
+	int ret;
+
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
-    ecdh_init(&ctx->context);
-    ecp_point_init(&ctx->X);
+    ecp_group_init(&ctx->grp);
+ 	mpi_init(&ctx->priv);
+	ecp_point_init(&ctx->pub);
+	ecp_point_init(&ctx->peer);
+	ecp_point_init(&ctx->X);
     ecp_point_init(&ctx->key);
-    return (ecp_use_known_dp(&ctx->context.grp,id));
+	MPI_CHK(ecp_use_known_dp(&ctx->grp,id));
+
+cleanup:
+	return ret;
 }
 
 /*
@@ -24,7 +32,7 @@ int bd2_make_key(bd2_context *ctx,void *p_rng) {
 
 	mpi_init(&d);
 
-    MPI_CHK(ecp_gen_keypair(&ctx->context.grp,&d,&ctx->key,ctr_drbg_random,p_rng));
+    MPI_CHK(ecp_gen_keypair(&ctx->grp,&d,&ctx->key,ctr_drbg_random,p_rng));
     
 cleanup:
 	mpi_free(&d);	
@@ -38,7 +46,7 @@ int bd2_export_key(bd2_context *ctx,unsigned int *olen,unsigned char *buf,unsign
 	if (mpi_size(&ctx->key.X) > buflen)
         return BUFFER_TOO_SHORT;
 
-    *olen = ctx->context.grp.pbits / 8 + ((ctx->context.grp.pbits % 8) != 0);
+    *olen = ctx->grp.pbits / 8 + ((ctx->grp.pbits % 8) != 0);
     return mpi_write_binary(&ctx->key.X,buf,*olen);
 }
 
@@ -49,13 +57,14 @@ int bd2_compute_shared_point(bd2_context *ctx,ecp_point *P,void *p_rng) {
 	 /*
      * Make sure Q is a valid pubkey before using it
      */
-    MPI_CHK(ecp_check_pubkey(&ctx->context.grp,&ctx->context.Qp));
+    MPI_CHK(ecp_check_pubkey(&ctx->grp,&ctx->peer));
 
-	// computing the shared key as P = d*Qp
-    MPI_CHK(ecp_mul(&ctx->context.grp,P,&ctx->context.d,&ctx->context.Qp,ctr_drbg_random,p_rng));
+	// computing the shared key as the product of our private exponent for the 
+    // public value of the other node
+    MPI_CHK(ecp_mul(&ctx->grp,P,&ctx->priv,&ctx->peer,ctr_drbg_random,p_rng));
 
 	// check if the shared key is 0
-    if( ecp_is_zero(P))
+    if(ecp_is_zero(P))
     {
         ret = POLARSSL_ERR_ECP_BAD_INPUT_DATA;
         goto cleanup;
@@ -72,26 +81,27 @@ cleanup:
 */
 int bd2_make_val(bd2_context *ctx,unsigned int *olen,unsigned char *buf,unsigned int buflen,void *p_rng) {
 	int ret;
-    ecp_point P;
+    ecp_point P,oppP;
 
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
     ecp_point_init(&P);
+	ecp_point_init(&oppP);
 
 	// first we compute Kij, the shared key between node i and j
 	MPI_CHK(bd2_compute_shared_point(ctx,&P,p_rng));
 		
 	// computing X = key + (-P)
-	ecp_opp(&ctx->context.grp,&P,&P);
-	ecp_add(&ctx->context.grp,&ctx->X,&ctx->key,&P);
+	ecp_opp(&ctx->grp,&oppP,&P);
+	ecp_add(&ctx->grp,&ctx->X,&ctx->key,&oppP);
 
 	// exporting on buffer
-	MPI_CHK(ecp_tls_write_point(&ctx->context.grp,&ctx->X,ctx->context.point_format,
-                                     olen,buf,buflen));
+	MPI_CHK(ecp_tls_write_point(&ctx->grp,&ctx->X,0,olen,buf,buflen));
     
 cleanup:	 
     ecp_point_free(&P);
+	ecp_point_free(&oppP);
 	return(ret);
 }
 
@@ -100,13 +110,12 @@ cleanup:
 */
 int bd2_import_val(bd2_context *ctx,unsigned char *buf,unsigned int buflen) {
     int ret;
-	unsigned char *p;
+	const unsigned char *p = buf;
  
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
-	p = buf;
-	if ((ret = ecp_tls_read_point(&ctx->context.grp,&ctx->X,(const unsigned char **) &p,buflen)) != 0)
+	if ((ret = ecp_tls_read_point(&ctx->grp,&ctx->X,&p,buflen)) != 0)
 		return ret;
 	
 	return 0;
@@ -125,7 +134,7 @@ int bd2_calc_key(bd2_context *ctx,void *p_rng) {
     ecp_point_init(&P);
 
 	MPI_CHK(bd2_compute_shared_point(ctx,&P,p_rng));
-	MPI_CHK(ecp_add(&ctx->context.grp,&ctx->key,&ctx->X,&P));
+	MPI_CHK(ecp_add(&ctx->grp,&ctx->key,&ctx->X,&P));
 
 cleanup:
 	ecp_point_free(&P);
@@ -136,32 +145,39 @@ int bd2_free(bd2_context *ctx) {
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 	
-	ecdh_free(&ctx->context);
+	ecp_group_free(&ctx->grp);
+	mpi_free(&ctx->priv);
+	ecp_point_free(&ctx->pub);
+	ecp_point_free(&ctx->peer);
 	ecp_point_free(&ctx->X);
 	ecp_point_free(&ctx->key);
 
 	return 0;
 }
 
-int bd2_make_public(bd2_context *ctx,unsigned int *olen,unsigned char *buf,unsigned int buflen,void *p_rng) {
+int bd2_make_public(bd2_context *ctx,unsigned int *olen,unsigned char *buf,
+			       unsigned int buflen,void *p_rng) {
 	int ret;
 
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
-	if ((ret = ecdh_make_public(&ctx->context,olen,buf,buflen,ctr_drbg_random,p_rng)) != 0)
-		return ret; 
+	MPI_CHK(ecp_gen_keypair(&ctx->grp,&ctx->priv,&ctx->pub,ctr_drbg_random,p_rng));
+	MPI_CHK(ecp_tls_write_point(&ctx->grp,&ctx->pub,0,olen,buf,buflen));
+	return ret; 
 
-	return 0;
+cleanup:
+	return ret;
 }
 
 int bd2_read_public(bd2_context *ctx,const unsigned char *buf,unsigned int buflen) {
 	int ret;
+	const unsigned char *p = buf;
 
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
-	if ((ret = ecdh_read_public(&ctx->context,buf,buflen)) != 0)
+	if ((ret = ecp_tls_read_point(&ctx->grp,&ctx->peer,&p,buflen)) != 0)
 		return ret; 
 	
 	return 0;		
