@@ -41,7 +41,7 @@ int mka_make_broadval(mka_context *ctx,unsigned int *olen,unsigned char *buf,uns
 		MPI_CHK(ecp_tls_write_point(&ctx->grp,&ctx->k,0,olen,buf,buflen));
 	}
 	else {
-		MPI_CHK(ecp_mul(&ctx->grp,&tmp,&ctx->a,&ctx->k,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&tmp,&ctx->a,&ctx->k,ctr_drbg_random,p_rng));
 		MPI_CHK(ecp_copy(&ctx->k,&tmp));
 		MPI_CHK(ecp_tls_write_point(&ctx->grp,&ctx->k,0,olen,buf,buflen));
 	}
@@ -78,7 +78,7 @@ int mka_acc_broadval(mka_context *ctx,unsigned char *buf,unsigned int buflen,voi
 	if (ctx->r > 0) {
 		MPI_CHK(ecp_opp(&ctx->grp,&tmp1,&ctx->k));
 		MPI_CHK(mpi_lset(&r,ctx->r));
-		MPI_CHK(ecp_mul(&ctx->grp,&tmp2,&r,&tmp1,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&tmp2,&r,&tmp1,ctr_drbg_random,p_rng));
 		MPI_CHK(ecp_add(&ctx->grp,&tmp1,&sum,&tmp2));
 	}
 	else {
@@ -86,7 +86,7 @@ int mka_acc_broadval(mka_context *ctx,unsigned char *buf,unsigned int buflen,voi
 	}
 	MPI_CHK(mpi_lset(&r,(ctx->r)+1));
 	MPI_CHK(mpi_inv_mod(&exp,&r,&(ctx->grp).N));
-	MPI_CHK(ecp_mul(&ctx->grp,&ctx->k,&exp,&tmp1,ctr_drbg_random,p_rng));
+	MPI_CHK(test_ecp_mul(&ctx->grp,&ctx->k,&exp,&tmp1,ctr_drbg_random,p_rng));
 	if (ctx->r < (ctx->n-2)) (ctx->r)++;
 	
 cleanup:
@@ -111,7 +111,7 @@ int mka_compute_key(mka_context *ctx,unsigned int *olen,unsigned char *buf,unsig
 	if (ctx->r < (ctx->n)-2)
 		return ROUND_NOT_COMPLETED;
 
-	MPI_CHK(ecp_mul(&ctx->grp,&tmp,&ctx->a,&ctx->k,ctr_drbg_random,p_rng));
+	MPI_CHK(test_ecp_mul(&ctx->grp,&tmp,&ctx->a,&ctx->k,ctr_drbg_random,p_rng));
 	MPI_CHK(mpi_copy(&ctx->key,&tmp.X));
 
 	if(mpi_size(&ctx->key) > buflen )

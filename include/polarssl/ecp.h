@@ -621,6 +621,10 @@ int ecp_gen_keypair( ecp_group *grp, mpi *d, ecp_point *Q,
                      int (*f_rng)(void *, unsigned char *, size_t),
                      void *p_rng );
 
+int ecp_gen_privkey( ecp_group *grp, mpi *d,
+                     int (*f_rng)(void *, unsigned char *, size_t),
+                     void *p_rng );
+
 /**
  * \brief           Generate a keypair
  *

@@ -14,7 +14,7 @@
 int notmain() {
 	unsigned int olen;
 	int i,ret;
-	char personalization[] = "server";
+	char personalization[] = "mka test";
 	unsigned char data_sent[LEN],data_rec[(N-1)*LEN],buf[10000];
 	mka_context ctx;
 	ctr_drbg_context ctr_drbg;
@@ -32,7 +32,7 @@ int notmain() {
                                (const unsigned char *) personalization,
                                strlen(personalization))) != 0)
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
@@ -40,45 +40,46 @@ int notmain() {
 	inizializzaKnxTpUart(area,line,member);
 	setListenToBroadcasts(true);
 
-	turnOnLed(GREEN);
+	turnGPIO(PORTD,12,ON);
 
 	if ((ret = mka_init(&ctx,grp_id)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 
 	if ((ret = mka_set_part(&ctx,N,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 
 	for(i = 0; i <= N-2; i++) {	
 		if ((ret = mka_make_broadval(&ctx,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
-			turnOnLed(RED);
+			turnGPIO(PORTD,14,ON);
 			entropy_free(&entropy);
 			return (ret);
 		}
 		
 		sendData(0,0,0,data_sent,LEN,UART1);
 		receiveData(data_rec,(N-1)*LEN);
-		turnOnLed(BLUE);
+		turnGPIO(PORTD,15,ON);
 
 		if ((ret = mka_acc_broadval(&ctx,data_rec,(N-1)*LEN,&ctr_drbg)) != 0) {
-			turnOnLed(RED);
+			turnGPIO(PORTD,14,ON);
 			entropy_free(&entropy);
 			return (ret);
 		}
 	}
 
 	if ((ret = mka_compute_key(&ctx,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 	
-	turnOnLed(OFF);
+	turnGPIO(PORTD,12,OFF);
+	turnGPIO(PORTD,15,OFF);
 
 	entropy_free(&entropy);
 	mka_free(&ctx);

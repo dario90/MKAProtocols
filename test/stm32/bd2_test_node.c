@@ -14,7 +14,7 @@
 int notmain() {
 	unsigned int olen;
 	int ret;
-	char personalization[] = "server";
+	char personalization[] = "bd2 test";
 	unsigned char data_sent[LEN],data_rec[LEN],buf[10000];
 	bd2_context ctx;
 	ctr_drbg_context ctr_drbg;
@@ -32,7 +32,7 @@ int notmain() {
                                (const unsigned char *) personalization,
                                strlen(personalization))) != 0)
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
@@ -40,24 +40,26 @@ int notmain() {
 	inizializzaKnxTpUart(area,line,member);
 	setListenToBroadcasts(true);
 
+	turnGPIO(PORTD,12,ON);
+
 	if ((ret = bd2_init(&ctx,grp_id)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 
 	if ((ret = bd2_make_public(&ctx,&olen,data_sent,LEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 
 	sendData(0,0,0,data_sent,LEN,UART1);
 	receiveData(data_rec,LEN);
-	turnOnLed(BLUE);
+	turnGPIO(PORTD,15,ON);
 
 	if ((ret = bd2_read_public(&ctx,data_rec,LEN)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
@@ -65,18 +67,19 @@ int notmain() {
 	receiveData(data_rec,LEN);
 
 	if ((ret = bd2_import_val(&ctx,data_sent,LEN)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 	
 	if ((ret = bd2_calc_key(&ctx,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		entropy_free(&entropy);
 		return (ret);
 	}
 
-	turnOnLed(GREEN);
+	turnGPIO(PORTD,12,OFF);
+	turnGPIO(PORTD,15,OFF);
 
 	entropy_free(&entropy);
 	bd2_free(&ctx);

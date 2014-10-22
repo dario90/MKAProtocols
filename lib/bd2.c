@@ -61,7 +61,7 @@ int bd2_compute_shared_point(bd2_context *ctx,ecp_point *P,void *p_rng) {
 
 	// computing the shared key as the product of our private exponent for the 
     // public value of the other node
-    MPI_CHK(ecp_mul(&ctx->grp,P,&ctx->priv,&ctx->peer,ctr_drbg_random,p_rng));
+    MPI_CHK(test_ecp_mul(&ctx->grp,P,&ctx->priv,&ctx->peer,ctr_drbg_random,p_rng));
 
 	// check if the shared key is 0
     if(ecp_is_zero(P))

@@ -16,3 +16,15 @@ cleanup:
     return( ret );
 }
 
+int test_ecp_mul(ecp_group *grp, ecp_point *R,
+                const mpi *m, const ecp_point *P,
+                int (*f_rng)(void *, unsigned char *, size_t), void *p_rng )
+{
+	int ret;
+
+	turnGPIO(PORTB,11,ON);	
+	ret = ecp_mul(grp,R,m,P,f_rng,p_rng);
+	turnGPIO(PORTB,11,OFF);
+
+	return ret;
+}

@@ -224,8 +224,10 @@ bool sendNCDPosConfirm(int sequenceNo, int area, int line, int member) {
 
 bool sendMessage(int uart) {
 	int i,confirmation,messageSize = getTotalLength(&knx.tg);
+    uint8_t send;
 
-	uint8_t send;
+	turnGPIO(PORTA,7,ON);
+
 	for (i = 0; i < messageSize; i++) {
 		send = getBufferByte(&knx.tg, i);
 		uart_putc(send,uart);
@@ -241,6 +243,8 @@ bool sendMessage(int uart) {
 	else
 		return false;
 	*/
+
+	turnGPIO(PORTA,7,OFF);
 }
 
 void sendAck(int uart) {
@@ -286,6 +290,8 @@ bool isListeningToGroupAddress(int main, int middle, int sub) {
 void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,int len,int uart) {
 	int i = 0,j = 7;
 
+	turnGPIO(PORTB,1,ON);
+
 	clear(&knx.tg);
 	setSourceAddress(&knx.tg, knx.source_area, knx.source_line, knx.source_member);
 	setTargetGroupAddress(&knx.tg, mainGroup, middleGroup, subGroup);
@@ -305,6 +311,8 @@ void sendData(int mainGroup, int middleGroup, int subGroup,unsigned char *data,i
 	setPayloadLength(&knx.tg,j-6);
 	createChecksum(&knx.tg);
 	sendMessage(uart);
+
+	turnGPIO(PORTB,1,OFF);
 }
 
 void sendDataIndividual(int area, int line, int member,
@@ -347,6 +355,7 @@ void receiveData(unsigned char *buf,int len) {
 
 	while (len > 0) {	
 		if (readKNXTelegram()) {
+			turnGPIO(PORTC,1,ON);
 			getReceivedPayload(payload,&olen);
 			if (olen <= len) {
 				memcpy(buf,payload,olen);
@@ -357,7 +366,8 @@ void receiveData(unsigned char *buf,int len) {
 				memcpy(buf,payload,len);
 				len = 0;
 			}
+			turnGPIO(PORTC,1,OFF);
 		}
-		else turnOnLed(ORANGE);
+		else turnGPIO(PORTD,14,ON);
 	}
 }

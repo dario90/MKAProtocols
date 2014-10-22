@@ -29,7 +29,7 @@ int gdh2_make_firstval(gdh2_context *ctx,unsigned int *olen,unsigned char *obuf,
 		return BAD_INPUT_DATA;
 
 	ecp_point_init(&p);
-	MPI_CHK(ecp_mul(&ctx->grp,&p,&ctx->priv,&ctx->grp.G,ctr_drbg_random,p_rng));	
+	MPI_CHK(test_ecp_mul(&ctx->grp,&p,&ctx->priv,&ctx->grp.G,ctr_drbg_random,p_rng));	
 	MPI_CHK(ecp_tls_write_point(&ctx->grp,&p,0,olen,obuf,obuflen));
 
 cleanup:
@@ -54,7 +54,7 @@ int gdh2_make_val(gdh2_context *ctx,int index,unsigned char *buf,unsigned int bu
 	if (index == ctx->N) {
 		// if I'm the last node, compute the key
 		MPI_CHK(ecp_tls_read_point(&ctx->grp,&read,&p,buflen));
-		MPI_CHK(ecp_mul(&ctx->grp,&write,&ctx->priv,&read,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&write,&ctx->priv,&read,ctr_drbg_random,p_rng));
 		MPI_CHK(mpi_copy(&ctx->key,&write.X));
 		i = 1;
 	} 
@@ -67,7 +67,7 @@ int gdh2_make_val(gdh2_context *ctx,int index,unsigned char *buf,unsigned int bu
 	term = (index == 2) ? 1 : index;
 	for( ; i < term; i++) {
 		MPI_CHK(ecp_tls_read_point(&ctx->grp,&read,&p,buflen));
-		MPI_CHK(ecp_mul(&ctx->grp,&write,&ctx->priv,&read,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&write,&ctx->priv,&read,ctr_drbg_random,p_rng));
 		MPI_CHK(ecp_tls_write_point(&ctx->grp,&write,0,olen,obuf+len,obuflen-len));
 		len += *olen;
 		if (i == 0) {
@@ -78,7 +78,7 @@ int gdh2_make_val(gdh2_context *ctx,int index,unsigned char *buf,unsigned int bu
 	}
 	// add an extra point if I'm the second node 
 	if (index == 2) {
-		MPI_CHK(ecp_mul(&ctx->grp,&write,&ctx->priv,&ctx->grp.G,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&write,&ctx->priv,&ctx->grp.G,ctr_drbg_random,p_rng));
 		MPI_CHK(ecp_tls_write_point(&ctx->grp,&write,0,olen,obuf+len,obuflen-len));
 		len += *olen;
 	}
@@ -106,7 +106,7 @@ int gdh2_compute_key(gdh2_context *ctx,int index,unsigned char *buf,unsigned int
 	p = buf + (plen*(ctx->N-index-1));
 
 	MPI_CHK(ecp_tls_read_point(&ctx->grp,&read,&p,buflen));
-	MPI_CHK(ecp_mul(&ctx->grp,&tmp,&ctx->priv,&read,ctr_drbg_random,p_rng));
+	MPI_CHK(test_ecp_mul(&ctx->grp,&tmp,&ctx->priv,&read,ctr_drbg_random,p_rng));
 	MPI_CHK(mpi_copy(&ctx->key,&tmp.X));
 
 	if(mpi_size(&ctx->key) > obuflen )

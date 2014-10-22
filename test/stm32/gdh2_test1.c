@@ -41,18 +41,19 @@ int notmain() {
                                (const unsigned char *) personalization,
                                strlen(personalization))) != 0)
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
 
 	inizializzaKnxTpUart(area1,line1,member1);
 
-	turnOnLed(GREEN);
+	turnGPIO(PORTD,12,ON);	
+
 	gdh2_init(&ctx1,grp_id,N,&ctr_drbg); gdh2_init(&ctx2,grp_id,N,&ctr_drbg);
 
 	if ((ret = gdh2_make_firstval(&ctx1,&olen,data_sent1,BUFLEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
@@ -60,10 +61,10 @@ int notmain() {
 	sendDataIndividual(area2,line2,member2,data_sent1,olen,UART1);
 	inizializzaKnxTpUart(area2,line2,member2);
 	receiveData(data_rec2,olen);
-	turnOnLed(BLUE);
+	turnGPIO(PORTD,15,ON);
 
 	if ((ret = gdh2_make_val(&ctx2,2,data_rec2,BUFLEN,&olen,data_sent2,BUFLEN,&ctr_drbg)) != 0) {
-		turnOnLed(ORANGE);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
@@ -71,31 +72,30 @@ int notmain() {
 	sendDataIndividual(area3,line3,member3,data_sent2,olen,UART6);
 	setListenToBroadcasts(true);
 	receiveData(data_rec1,(N-1)*LEN);
-	turnOnLed(ORANGE);
+	turnGPIO(PORTD,13,ON);
 
 	if ((ret = gdh2_compute_key(&ctx1,1,data_rec1,BUFLEN,&olen,data_sent1,BUFLEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
 
 	if ((ret = gdh2_compute_key(&ctx2,2,data_rec1,BUFLEN,&olen,data_sent2,BUFLEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
 
-	turnOnLed(OFF);
+	turnGPIO(PORTD,12,OFF);
+	turnGPIO(PORTD,15,OFF);
 
 /* // sanity check: verify if the first 2 nodes have computed the same key -- DISABLED
 	for(ret = 0; ret < olen; ret++) {
 		if (data_sent1[ret] != data_sent2[ret]) {
-			turnOnLed(RED);
+			turnGPIO(PORTD,14,ON);
 			return -1;
 		}
 	}
-
-	turnOnLed(GREEN);
 */
 
 	entropy_free(&entropy);

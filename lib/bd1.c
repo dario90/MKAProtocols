@@ -43,7 +43,7 @@ int bd1_gen_value(bd1_context *ctx,unsigned char *buf,unsigned int buflen,unsign
 	if (ecp_is_zero(&z2)) 
 		MPI_CHK(ecp_set_zero(&ctx->X));
 	else 
-		MPI_CHK(ecp_mul(&ctx->grp,&ctx->X,&ctx->r,&z2,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&ctx->X,&ctx->r,&z2,ctr_drbg_random,p_rng));
 	MPI_CHK(ecp_tls_write_point(&ctx->grp,&ctx->X,0,
                                      olen,obuf,obuflen));
 cleanup:
@@ -73,20 +73,20 @@ int bd1_compute_key(bd1_context *ctx,unsigned char *buf,unsigned int buflen,int 
 	if (mpi_cmp_int(&exp2,0) == 0)
 		ecp_set_zero(&helper1);
 	else {
-		MPI_CHK(ecp_mul(&ctx->grp,&helper1,&exp2,&ctx->z,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&helper1,&exp2,&ctx->z,ctr_drbg_random,p_rng));
 	}
 
 	if (n == 2) 
 		ecp_copy(&key,&helper1);
 	else {
 		MPI_CHK(mpi_lset(&exp1,n-1));
-		MPI_CHK(ecp_mul(&ctx->grp,&helper2,&exp1,&ctx->X,ctr_drbg_random,p_rng));
+		MPI_CHK(test_ecp_mul(&ctx->grp,&helper2,&exp1,&ctx->X,ctr_drbg_random,p_rng));
 		MPI_CHK(ecp_add(&ctx->grp,&key,&helper1,&helper2));
 
 		for (i = 2; i <= n-1; i++) {
 			MPI_CHK(mpi_lset(&exp1,n-i));
 			MPI_CHK(ecp_tls_read_point(&ctx->grp,&helper1,&p,buflen));
-			MPI_CHK(ecp_mul(&ctx->grp,&helper2,&exp1,&helper1,ctr_drbg_random,p_rng));
+			MPI_CHK(test_ecp_mul(&ctx->grp,&helper2,&exp1,&helper1,ctr_drbg_random,p_rng));
 			MPI_CHK(ecp_add(&ctx->grp,&helper1,&key,&helper2));
 			MPI_CHK(ecp_copy(&key,&helper1));
 		}

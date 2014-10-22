@@ -40,21 +40,22 @@ int notmain() {
                                (const unsigned char *) personalization,
                                strlen(personalization))) != 0)
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
 
 	inizializzaKnxTpUart(area3,line3,member3);
 
-	turnOnLed(GREEN);
+	turnGPIO(PORTD,12,ON);
+	
 	gdh2_init(&ctx,grp_id,N,&ctr_drbg);
 
 	receiveData(data_rec,BUFLEN);
-	turnOnLed(BLUE);
+	turnGPIO(PORTD,15,ON);
 
 	if ((ret = gdh2_make_val(&ctx,3,data_rec,BUFLEN,&olen,data_sent,BUFLEN,&ctr_drbg)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}
@@ -62,12 +63,13 @@ int notmain() {
 	sendData(0,0,0,data_sent,olen,UART1);
 
 	if ((ret = gdh2_export_key(&ctx,&olen,data_sent,BUFLEN)) != 0) {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
     	entropy_free( &entropy );
 		return(ret);
 	}	
 
-	turnOnLed(OFF);
+	turnGPIO(PORTD,12,OFF);
+	turnGPIO(PORTD,15,OFF);
 
 	entropy_free(&entropy);
 	gdh2_free(&ctx);

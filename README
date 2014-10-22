@@ -44,3 +44,4 @@ Algorithms implemented so far:
 - BD2 (M. Burmester, Y. Desmedt, Efficient and Secure Conference Key Distribution)
 - MKA-abp (A. Antonini, A. Barenghi, G. Pelosi, Security Analysis of Building Automation Networks
 Threat Model and Viable Mitigation Techniques)
+- GDH2 (M. Steiner et al., Diffie-Hellman Key Distribution Extended to Group Communication)

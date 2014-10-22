@@ -1,7 +1,11 @@
 # include "stm32f4d_helper.h"
 # include "polarssl/entropy.h"
 
-# define SPEED    CLOCK168
+# define TRAS_SPEED UART19200
+
+int SPEED = CLOCK168;
+int speeds[] = {CLOCK8,CLOCK16,CLOCK32,CLOCK42,CLOCK64,CLOCK120,CLOCK168};
+int speed_index = 6;
 
 void PUT32 ( unsigned int, unsigned int );
 void PUT16 ( unsigned int, unsigned int );
@@ -25,6 +29,8 @@ void handler_reset(void)
 {
     unsigned long *source;
     unsigned long *destination;
+	int i = speed_index;
+
     // Copying data from Flash to RAM
     source = &_data_flash;
     for (destination = &_data_begin; destination < &_data_end;)
@@ -36,6 +42,12 @@ void handler_reset(void)
     {
         *(destination++) = 0;
     }
+
+	if ((i <= 0) || (i > 6)) 
+		speed_index = 6;
+	else 
+		speed_index = i-1;
+	SPEED = speeds[speed_index];
 
 	// init clock, leds, rng, uart
 	clock_init();
@@ -130,19 +142,61 @@ void rnd_init ( void )
 void init() {
 	unsigned int ra;
 
-	ra=GET32(RCC_AHB1ENR);
-    ra|=1<<3; //enable port D
+	ra = GET32(RCC_AHB1ENR);
+    ra |= ((1<<0)|(1<<1)|(1<<2)|(1<<3)); //enable ports A,B, C and D
     PUT32(RCC_AHB1ENR,ra);
 
-    //d12 = d15 output
-    ra=GET32(GPIOD_MODER);
-    ra&=0x00FFFFFF;
-    ra|=0x55000000;
-    PUT32(GPIOD_MODER,ra);
-    //push pull
-    ra=GET32(GPIOD_OTYPER);
-    ra&=0xFFFF0FFF;
-    PUT32(GPIOD_OTYPER,ra);
+    init_gpio_output(PORTD,12);
+	init_gpio_output(PORTD,13);
+	init_gpio_output(PORTD,14);
+	init_gpio_output(PORTD,15);
+
+	init_gpio_output(PORTA,7);
+	init_gpio_output(PORTB,1);
+	init_gpio_output(PORTB,11);
+	init_gpio_output(PORTC,1);
+}
+
+void init_gpio_output(int port,int number) {
+	unsigned int ra;
+
+	if (port == PORTA) {
+		ra = GET32(GPIOA_MODER);
+    	ra &= ~(3<<(number*2));
+    	ra |= (1<<(number*2));
+    	PUT32(GPIOA_MODER,ra);
+
+		ra = GET32(GPIOA_OTYPER);
+    	ra &= ~(1<<number);
+		PUT32(GPIOA_OTYPER,ra);
+	} else if (port == PORTB) {
+		ra = GET32(GPIOB_MODER);
+    	ra &= ~(3<<(number*2));
+    	ra |= (1<<(number*2));
+    	PUT32(GPIOB_MODER,ra);
+
+		ra = GET32(GPIOB_OTYPER);
+    	ra &= ~(1<<number);
+		PUT32(GPIOB_OTYPER,ra);
+	} else if (port == PORTC) {
+		ra = GET32(GPIOC_MODER);
+    	ra &= ~(3<<(number*2));
+    	ra |= (1<<(number*2));
+    	PUT32(GPIOC_MODER,ra);
+		
+		ra = GET32(GPIOC_OTYPER);
+    	ra &= ~(1<<number);
+		PUT32(GPIOC_OTYPER,ra);
+	} else if (port == PORTD) {
+		ra = GET32(GPIOD_MODER);
+    	ra &= ~(3<<(number*2));
+    	ra |= (1<<(number*2));
+    	PUT32(GPIOD_MODER,ra);
+			
+		ra = GET32(GPIOD_OTYPER);
+    	ra &= ~(1<<number);
+		PUT32(GPIOD_OTYPER,ra);
+	}	
 }
 
 void uart1_init() {
@@ -176,25 +230,46 @@ void uart1_init() {
 // USARTDIV = Fck/(BR*16)
     switch(SPEED) {
 		case CLOCK8:
-			PUT32(USART1_BRR,(52<<4)|(1<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(52<<4)|(1<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(26<<4)|(0<<0));
 			break;
 		case CLOCK16:
-			PUT32(USART1_BRR,(104<<4)|(12<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(104<<4)|(2<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(52<<4)|(1<<0));
 			break;
 		case CLOCK32:
-			PUT32(USART1_BRR,(208<<4)|(6<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(208<<4)|(5<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(104<<4)|(2<<0));
 			break;
 		case CLOCK42:
-			PUT32(USART1_BRR,(273<<4)|(7<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(273<<4)|(7<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(136<<4)|(11<<0));
 			break;
 		case CLOCK64:
-			PUT32(USART1_BRR,(416<<4)|(12<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(416<<4)|(10<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(208<<4)|(5<<0));
 			break;
 		case CLOCK120:
-			PUT32(USART1_BRR,(390<<4)|(10<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(390<<4)|(10<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(195<<4)|(5<<0));
 			break;
 		case CLOCK168:
-			PUT32(USART1_BRR,(136<<4)|(11<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART1_BRR,(136<<4)|(11<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART1_BRR,(68<<4)|(5<<0));
 			break;
 	}
 	PUT32(USART1_CR1,(1<<13)|(1<<3)|(1<<2)|(1<<5));
@@ -232,25 +307,46 @@ void uart6_init() {
 // USARTDIV = Fck/(BR*16)
     switch(SPEED) {
 		case CLOCK8:
-			PUT32(USART6_BRR,(52<<4)|(1<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(52<<4)|(1<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(26<<4)|(0<<0));
 			break;
 		case CLOCK16:
-			PUT32(USART6_BRR,(104<<4)|(12<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(104<<4)|(2<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(52<<4)|(1<<0));
 			break;
 		case CLOCK32:
-			PUT32(USART6_BRR,(208<<4)|(6<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(208<<4)|(5<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(104<<4)|(2<<0));
 			break;
 		case CLOCK42:
-			PUT32(USART6_BRR,(273<<4)|(7<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(273<<4)|(7<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(136<<4)|(11<<0));
 			break;
 		case CLOCK64:
-			PUT32(USART6_BRR,(416<<4)|(12<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(416<<4)|(10<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(208<<4)|(5<<0));
 			break;
 		case CLOCK120:
-			PUT32(USART6_BRR,(390<<4)|(10<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(390<<4)|(10<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(195<<4)|(5<<0));
 			break;
 		case CLOCK168:
-			PUT32(USART6_BRR,(136<<4)|(11<<0));
+			if (TRAS_SPEED == UART9600)
+				PUT32(USART6_BRR,(136<<4)|(11<<0));
+			else if (TRAS_SPEED == UART19200)
+				PUT32(USART6_BRR,(68<<4)|(5<<0));
 			break;
 	}
 	PUT32(USART6_CR1,(1<<13)|(1<<2)|(1<<5)|(1<<3));
@@ -269,7 +365,7 @@ void uart1_handler() {
 	sr = GET32(USART1_SR);
 	if (sr & (1<<3))
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		while (1) {}
 	}
 	else {
@@ -294,7 +390,7 @@ void uart6_handler() {
 	sr = GET32(USART6_SR);
 	if (sr & (1<<3))
 	{
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
 		while (1) {}
 	}
 	else {
@@ -323,13 +419,13 @@ int random(void *data, unsigned char *output, unsigned int len, unsigned int *ol
         if(ra & 1) break;
         if(ra & 0x66)
         {
-			turnOnLed(RED);
+			turnGPIO(PORTD,14,ON);
             return(POLARSSL_ERR_ENTROPY_SOURCE_FAILED);
         }
     }
     if(ra & 0x66)
     {
-		turnOnLed(RED);
+		turnGPIO(PORTD,14,ON);
         return(POLARSSL_ERR_ENTROPY_SOURCE_FAILED);
     }
 	ra = GET32(RNG_DR);
@@ -344,37 +440,40 @@ int random(void *data, unsigned char *output, unsigned int len, unsigned int *ol
     return(0);	
 }
 
-void turnOnLed(int led) {
-	unsigned int ra;
+void turnGPIO(int port,int number,int mode) {
+	unsigned int ra,andop,orop;
 
-	switch (led) {
-		case OFF:
-			PUT32(GPIOD_BSRR,0xFFFF0FFF);
-			break;
-		case GREEN:
-			ra = GET32(GPIOD_BSRR);
-			ra &= 0xEFFFFFFF;
-			ra |= (1<<12);
-			PUT32(GPIOD_BSRR,ra);
-			break;
-		case ORANGE:
-			ra = GET32(GPIOD_BSRR);
-			ra &= 0xDFFFFFFF;
-			ra |= (1<<13);
-			PUT32(GPIOD_BSRR,ra);
-			break;
-		case RED:
-			ra = GET32(GPIOD_BSRR);
-			ra &= 0xBFFFFFFF;
-			ra |= (1<<14);
-			PUT32(GPIOD_BSRR,ra);
-			break;
-		case BLUE:
-			ra = GET32(GPIOD_BSRR);
-			ra &= 0x7FFFFFFF;
-			ra |= (1<<15);
-			PUT32(GPIOD_BSRR,ra);
-			break;
+	if (mode == ON) {
+		andop = ~(1<<(number+16));
+		orop = (1<<number);
+	} else {
+		andop = ~(1<<number);
+		orop = (1<<(number+16));
+	}
+
+	if (port == PORTA) { 
+		ra = GET32(GPIOA_BSRR);
+		ra &= andop;
+		ra |= orop;
+		PUT32(GPIOA_BSRR,ra);
+	}
+	if (port == PORTB) { 
+		ra = GET32(GPIOB_BSRR);
+		ra &= andop;
+		ra |= orop;
+		PUT32(GPIOB_BSRR,ra);
+	}
+	else if (port == PORTC) { 
+		ra = GET32(GPIOC_BSRR);
+		ra &= andop;
+		ra |= orop;
+		PUT32(GPIOC_BSRR,ra);
+	}
+	else if (port == PORTD) { 
+		ra = GET32(GPIOD_BSRR);
+		ra &= andop;
+		ra |= orop;
+		PUT32(GPIOD_BSRR,ra);
 	}
 }
 

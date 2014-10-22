@@ -20,6 +20,8 @@
 #define GPIOA_OTYPER (GPIOA_BASE+0x04)
 #define GPIOA_OSPEED (GPIOA_BASE+0x08)
 #define GPIOA_PUPDR (GPIOA_BASE+0x0C)
+#define GPIOA_BSRR (GPIOA_BASE+0x18)
+#define GPIOA_IDR (GPIOA_BASE+0x10)
 // GPIO B
 #define GPIOB_BASE 0x40020400
 #define GPIOB_MODER (GPIOB_BASE+0x00)
@@ -28,6 +30,7 @@
 #define GPIOB_OTYPER (GPIOB_BASE+0x04)
 #define GPIOB_OSPEED (GPIOB_BASE+0x08)
 #define GPIOB_PUPDR (GPIOB_BASE+0x0C)
+#define GPIOB_BSRR (GPIOB_BASE+0x18)
 // GPIO C
 #define GPIOC_BASE 0x40020800
 #define GPIOC_MODER (GPIOC_BASE+0x00)
@@ -36,6 +39,7 @@
 #define GPIOC_OTYPER (GPIOC_BASE+0x04)
 #define GPIOC_OSPEED (GPIOC_BASE+0x08)
 #define GPIOC_PUPDR (GPIOC_BASE+0x0C)
+#define GPIOC_BSRR (GPIOC_BASE+0x18)
 // GPIO D
 #define GPIOD_BASE 0x40020C00
 #define GPIOD_MODER (GPIOD_BASE+0x00)
@@ -71,12 +75,13 @@
 #define RNG_DR (RNG_BASE+0x08)
 // --- only for stm32f4d07 ---
 
-// LEDS
-#define OFF       0
-#define GREEN     1
-#define RED       2
-#define ORANGE    3
-#define BLUE      4
+// GPIOs 
+# define OFF       -1
+# define ON        0
+# define PORTA     1 
+# define PORTB     2
+# define PORTC     3
+# define PORTD     4
 
 // CLOCK SPEED 
 # define CLOCK8   (2<<24)|(1<<22)|(3<<16)|(64<<6)|(8<<0)
@@ -87,6 +92,10 @@
 # define CLOCK120 (5<<24)|(1<<22)|(((2>>1)-1)<<16)|(120<<6)|(4<<0)
 # define CLOCK168 (7<<24)|(1<<22)|(((2>>1)-1)<<16)|(210<<6)|(5<<0)
 
+// UART SPEED
+# define UART9600  9600
+# define UART19200 19200
+ 
 #define UART_BUF_MAX_DIM 1000
 
 # define UART1 1
@@ -97,6 +106,8 @@ extern volatile int writer;
 extern volatile int counter;
 extern volatile int uart_buf[UART_BUF_MAX_DIM];
 
+void handler_reset();
+
 // initialize the clock of the board: 8MHz HSE, 168MHz pllgen 48MHz pll usb
 // specific to stm32fd07, doesn't work on stm32f4d01
 void clock_init (void);
@@ -105,10 +116,10 @@ void clock_init (void);
 // RNG only present on stm32f4d07
 void rnd_init (void);
 
-// initialize the four user leds (useful for debugging)
-// the initialization of TIM5 is commented, 
-// it will be implemented on a separate function
+// initialize the PD12,PD13,PD14,PD15 (LEDs) and PB1,PB11,PA7,PC1
 void init(void);
+
+void init_gpio_output(int port,int number);
 
 // init uart peripheral
 int uart_init ();
@@ -118,7 +129,7 @@ int uart_init ();
 // in case of error it returns POLARSSL_ERR_ENTROPY_SOURCE_FAILED 
 int random(void *data, unsigned char *output, unsigned int len, unsigned int *olen);
 
-void turnOnLed(int led);
+void turnGPIO(int port,int number,int mode);
 
 // send one byte via uart
 void uart_putc (unsigned int x,int uart);
