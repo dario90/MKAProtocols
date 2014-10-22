@@ -2,10 +2,11 @@
 # include "polarssl/entropy.h"
 
 # define TRAS_SPEED UART19200
+# define SPEED CLOCK168
 
-int SPEED = CLOCK168;
-int speeds[] = {CLOCK8,CLOCK16,CLOCK32,CLOCK42,CLOCK64,CLOCK120,CLOCK168};
-int speed_index = 6;
+//int SPEED = CLOCK168;
+//int speeds[] = {CLOCK8,CLOCK16,CLOCK32,CLOCK42,CLOCK64,CLOCK120,CLOCK168};
+//int speed_index = 6;
 
 void PUT32 ( unsigned int, unsigned int );
 void PUT16 ( unsigned int, unsigned int );
@@ -29,7 +30,7 @@ void handler_reset(void)
 {
     unsigned long *source;
     unsigned long *destination;
-	int i = speed_index;
+	//int i = speed_index;
 
     // Copying data from Flash to RAM
     source = &_data_flash;
@@ -43,11 +44,13 @@ void handler_reset(void)
         *(destination++) = 0;
     }
 
+	/*
 	if ((i <= 0) || (i > 6)) 
 		speed_index = 6;
 	else 
 		speed_index = i-1;
 	SPEED = speeds[speed_index];
+	*/
 
 	// init clock, leds, rng, uart
 	clock_init();

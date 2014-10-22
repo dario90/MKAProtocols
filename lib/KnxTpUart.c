@@ -113,16 +113,9 @@ bool readKNXTelegram() {
     // Broadcast (Programming Mode)
     interested = interested || (knx.listen_to_broadcasts && isTargetGroup(&knx.tg) && getTargetMainGroup(&knx.tg) == 0 && getTargetMiddleGroup(&knx.tg) == 0 && getTargetSubGroup(&knx.tg) == 0);
   
-/*
-	if (interested) {
-		sendAck();
-	} else {
-		sendNotAddressed();
-	}
-	if (getCommunicationType(&knx.tg) == KNX_COMM_NCD) {
-        sendNCDPosConfirm(getSequenceNumber(&knx.tg), getSourceArea(&knx.tg), getSourceLine(&knx.tg), getSourceMember(&knx.tg));
-    }
-*/
+	//if (interested) 
+	//	sendAck(UART1);
+
 	// Returns if we are interested in this diagram
 	return interested;
 }
@@ -253,8 +246,8 @@ void sendAck(int uart) {
 	uart_putc(sendByte,uart);
 }
 
-void sendNotAddressed(int uart) {
-	uint8_t sendByte = 0b00010000;
+void sendNack(int uart) {
+	uint8_t sendByte = 0b00001100;
 	
 	uart_putc(sendByte,uart);
 }

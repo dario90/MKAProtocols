@@ -1,4 +1,5 @@
 # include "stm32f4d_helper.h"
+# include "KnxTpUart.h"
 
 # define CRYP_BASE  0x50060000
 # define CRYP_CR    (CRYP_BASE+0x00)
@@ -19,6 +20,7 @@ int notmain() {
 	int i;
 	unsigned int ra;
 	unsigned int data[4] = {1,2,3,4};
+	unsigned char *p,enc_data[16];
 	
 	init_crypt();
 	turnGPIO(PORTD,12,ON);
@@ -32,11 +34,15 @@ int notmain() {
 		PUT32(CRYP_DIN,data[i]);
 	}
 
+	p = enc_data;
 	for (i = 0; i < 4; i++) {
 		while (GET32(CRYP_SR) & (1<<2)) {continue;};
 		ra = GET32(CRYP_DOUT);
+		memcpy(&ra,&p,4);
+		p += 4;
 	}
 	
+	sendData(0,0,0,enc_data,16,UART1);
 	turnGPIO(PORTD,12,OFF);
 
 	return 0;

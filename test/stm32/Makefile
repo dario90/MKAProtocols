@@ -13,6 +13,8 @@ OBJS = ../../lib/entropy.gcc.thumb.o	../../lib/entropy_poll.gcc.thumb.o	\
 
 LIBGCC = /home/dario/gcc-arm-none-eabi-4_8-2014q2/lib/gcc/arm-none-eabi/4.8.4/armv7-m/libgcc.a
 
+STLINK = /home/dario/stlink
+
 all: mka_test.gcc.thumb.bin	bd1_test.gcc.thumb.bin	bd2_test_root.gcc.thumb.bin \
 bd2_test_node.gcc.thumb.bin	gdh2_test1.gcc.thumb.bin	gdh2_test2.gcc.thumb.bin \
 aes_test.gcc.thumb.bin
@@ -61,6 +63,22 @@ aes_test.gcc.thumb.o: aes_test.c $(OBJS)
 aes_test.gcc.thumb.bin : memmap vectors.o aes_test.gcc.thumb.o $(OBJS)
 	$(ARMGNU)-ld -o aes_test.gcc.thumb.elf -T memmap vectors.o aes_test.gcc.thumb.o  $(OBJS) $(LIBGCC)
 	$(ARMGNU)-objcopy aes_test.gcc.thumb.elf aes_test.gcc.thumb.bin -O binary
+
+burn_bd1: bd1_test.gcc.thumb.bin
+	$(STLINK)/st-flash write bd1_test.gcc.thumb.bin 0x8000000
+burn_bd2_root: bd2_test_root.gcc.thumb.bin
+	$(STLINK)/st-flash write bd2_test_root.gcc.thumb.bin 0x8000000
+burn_bd2_node: bd2_test_node.gcc.thumb.bin
+	$(STLINK)/st-flash write bd2_test_node.gcc.thumb.bin 0x8000000
+burn_gdh2_test1: gdh2_test1.gcc.thumb.bin
+	$(STLINK)/st-flash write gdh2_test1.gcc.thumb.bin 0x8000000
+burn_gdh2_test2: gdh2_test2.gcc.thumb.bin
+	$(STLINK)/st-flash write gdh2_test2.gcc.thumb.bin 0x8000000
+burn_mka: mka_test.gcc.thumb.bin
+	$(STLINK)/st-flash write mka_test.gcc.thumb.bin 0x8000000
+
+size:
+	size *.elf
 
 clean:
 	rm *.o

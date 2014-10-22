@@ -36,7 +36,7 @@ typedef enum {
     void setIndividualAddress(int, int, int);
     
 	void sendAck(int uart);
-	void sendNotAddressed(int uart);
+	void sendNack(int uart);
 	
 	bool groupWriteBool(int, int, int, bool);
 	bool groupWrite2ByteFloat(int, int, int, float);
