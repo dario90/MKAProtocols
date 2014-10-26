@@ -219,7 +219,7 @@ bool sendMessage(int uart) {
 	int i,confirmation,messageSize = getTotalLength(&knx.tg);
     uint8_t send;
 
-	turnGPIO(PORTA,7,ON);
+	turnGPIO(PORTB,0,ON);
 
 	for (i = 0; i < messageSize; i++) {
 		send = getBufferByte(&knx.tg, i);
@@ -227,6 +227,7 @@ bool sendMessage(int uart) {
 	}
 
 	confirmation = true;
+	turnGPIO(PORTB,0,OFF);
 	return confirmation;
 
 	/*
@@ -236,8 +237,6 @@ bool sendMessage(int uart) {
 	else
 		return false;
 	*/
-
-	turnGPIO(PORTA,7,OFF);
 }
 
 void sendAck(int uart) {

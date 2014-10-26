@@ -17,7 +17,7 @@ STLINK = /home/dario/stlink
 
 all: mka_test.gcc.thumb.bin	bd1_test.gcc.thumb.bin	bd2_test_root.gcc.thumb.bin \
 bd2_test_node.gcc.thumb.bin	gdh2_test1.gcc.thumb.bin	gdh2_test2.gcc.thumb.bin \
-aes_test.gcc.thumb.bin
+
 
 vectors.o : vectors.s
 	$(ARMGNU)-as vectors.s -o vectors.o
@@ -57,12 +57,6 @@ gdh2_test2.gcc.thumb.o: gdh2_test2.c $(OBJS)
 gdh2_test2.gcc.thumb.bin : memmap vectors.o gdh2_test2.gcc.thumb.o $(OBJS)
 	$(ARMGNU)-ld -o gdh2_test2.gcc.thumb.elf -T memmap vectors.o gdh2_test2.gcc.thumb.o  $(OBJS) $(LIBGCC)
 	$(ARMGNU)-objcopy gdh2_test2.gcc.thumb.elf gdh2_test2.gcc.thumb.bin -O binary
-
-aes_test.gcc.thumb.o: aes_test.c $(OBJS)
-	$(ARMGNU)-gcc $(COPS) -mthumb -c aes_test.c -o aes_test.gcc.thumb.o
-aes_test.gcc.thumb.bin : memmap vectors.o aes_test.gcc.thumb.o $(OBJS)
-	$(ARMGNU)-ld -o aes_test.gcc.thumb.elf -T memmap vectors.o aes_test.gcc.thumb.o  $(OBJS) $(LIBGCC)
-	$(ARMGNU)-objcopy aes_test.gcc.thumb.elf aes_test.gcc.thumb.bin -O binary
 
 burn_bd1: bd1_test.gcc.thumb.bin
 	$(STLINK)/st-flash write bd1_test.gcc.thumb.bin 0x8000000

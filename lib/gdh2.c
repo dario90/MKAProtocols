@@ -2,21 +2,18 @@
 
 int gdh2_init(gdh2_context *ctx,ecp_group_id id,int N,void *p_rng) {
 	int ret;
-	ecp_point Q;
 
 	if (ctx == NULL)
 		return BAD_INPUT_DATA;
 
 	ecp_group_init(&ctx->grp);
-	ecp_point_init(&Q);
 	mpi_init(&ctx->priv);
 	mpi_init(&ctx->key);
 	MPI_CHK(ecp_use_known_dp(&ctx->grp,id));
-	MPI_CHK(ecp_gen_keypair(&ctx->grp,&ctx->priv,&Q,ctr_drbg_random,p_rng));
+	MPI_CHK(ecp_gen_privkey(&ctx->grp,&ctx->priv,ctr_drbg_random,p_rng));
 	ctx->N = N;
 
 cleanup:
-	ecp_point_free(&Q);
 	return ret;
 }
 

@@ -4,10 +4,6 @@
 # define TRAS_SPEED UART19200
 # define SPEED CLOCK168
 
-//int SPEED = CLOCK168;
-//int speeds[] = {CLOCK8,CLOCK16,CLOCK32,CLOCK42,CLOCK64,CLOCK120,CLOCK168};
-//int speed_index = 6;
-
 void PUT32 ( unsigned int, unsigned int );
 void PUT16 ( unsigned int, unsigned int );
 void PUT8 ( unsigned int, unsigned int );
@@ -30,7 +26,6 @@ void handler_reset(void)
 {
     unsigned long *source;
     unsigned long *destination;
-	//int i = speed_index;
 
     // Copying data from Flash to RAM
     source = &_data_flash;
@@ -43,14 +38,6 @@ void handler_reset(void)
     {
         *(destination++) = 0;
     }
-
-	/*
-	if ((i <= 0) || (i > 6)) 
-		speed_index = 6;
-	else 
-		speed_index = i-1;
-	SPEED = speeds[speed_index];
-	*/
 
 	// init clock, leds, rng, uart
 	clock_init();
@@ -88,7 +75,16 @@ void clock_init() {
 	}
 	
     //slow flash accesses down otherwise it will crash
-    PUT32(FLASH_ACR,0x00000105);
+	if ((SPEED) == (CLOCK168))
+   		PUT32(FLASH_ACR,0x00000105);
+	else if ((SPEED) == (CLOCK120))
+		PUT32(FLASH_ACR,0x00000103);
+	else if ((SPEED) == (CLOCK64))
+		PUT32(FLASH_ACR,0x00000102);
+	else if (((SPEED) == (CLOCK32)) || ((SPEED) == (CLOCK42)))
+		PUT32(FLASH_ACR,0x00000101);
+	else if (((SPEED) == (CLOCK8)) || ((SPEED) == (CLOCK16)))
+		PUT32(FLASH_ACR,0x00000100);
 
 	// setup pll: PLLvco = CLKIN*(PLLN/PLLM), PLLout = PLLvco/PLLP, PLLrng = PLLvco/PLLQ
     PUT32(RCC_PLLCFGR,SPEED);
@@ -154,7 +150,8 @@ void init() {
 	init_gpio_output(PORTD,14);
 	init_gpio_output(PORTD,15);
 
-	init_gpio_output(PORTA,7);
+	//init_gpio_output(PORTA,6);
+	init_gpio_output(PORTB,0);
 	init_gpio_output(PORTB,1);
 	init_gpio_output(PORTB,11);
 	init_gpio_output(PORTC,1);
