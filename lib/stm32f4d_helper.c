@@ -2,7 +2,7 @@
 # include "polarssl/entropy.h"
 
 # define TRAS_SPEED UART19200
-# define SPEED CLOCK168
+# define SPEED CLOCK16
 
 void PUT32 ( unsigned int, unsigned int );
 void PUT16 ( unsigned int, unsigned int );
